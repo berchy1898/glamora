@@ -99,26 +99,27 @@ export function EditorialGallery({
                     unoptimized={item.src.startsWith('http')}
                     sizes="(max-width: 700px) 100vw, 50vw"
                   />
-                  <span className="moment-folio-badge" aria-hidden="true">
-                    {indexFormatted}
-                  </span>
                   <span className="moment-zoom-badge" aria-hidden="true">
                     AMPLIAR ↗
                   </span>
                 </div>
               </button>
 
-              <figcaption className="moment-editorial-caption">
-                <span className="moment-caption-kicker">
-                  {indexFormatted} · {item.overline || 'GLAMORA SOCIAL'}
-                </span>
-                {item.caption && <p className="moment-caption-text">{item.caption}</p>}
-                {item.people && (
-                  <span className="moment-caption-people">
-                    En el encuadre: <em>{item.people}</em>
-                  </span>
-                )}
-              </figcaption>
+              {(item.caption || item.people || item.overline) && (
+                <figcaption className="moment-editorial-caption">
+                  {item.overline && (
+                    <span className="moment-caption-kicker">
+                      {item.overline}
+                    </span>
+                  )}
+                  {item.caption && <p className="moment-caption-text">{item.caption}</p>}
+                  {item.people && (
+                    <span className="moment-caption-people">
+                      En el encuadre: <em>{item.people}</em>
+                    </span>
+                  )}
+                </figcaption>
+              )}
             </figure>
           );
         })}

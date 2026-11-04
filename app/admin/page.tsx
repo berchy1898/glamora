@@ -95,6 +95,7 @@ export default function Admin() {
   const [coverPreview, setCoverPreview] = useState('');
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [newGalleryCaptions, setNewGalleryCaptions] = useState<string[]>([]);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -292,6 +293,7 @@ export default function Admin() {
 
     setGalleryFiles(optimizedFiles);
     setGalleryPreviews(optimizedFiles.map((file) => URL.createObjectURL(file)));
+    setNewGalleryCaptions(new Array(optimizedFiles.length).fill(''));
     setMessage(
       `${optimizedFiles.length} fotografías optimizadas (${formatFileSize(totalBefore)} → ${formatFileSize(totalAfter)}). Guarda para subirlas.`
     );
@@ -570,7 +572,8 @@ export default function Admin() {
           .from('covers')
           .getPublicUrl(fileName);
 
-        uploadedGallery.push(galleryPublicData.publicUrl);
+        const caption = (newGalleryCaptions[i] || '').trim();
+        uploadedGallery.push(caption ? `${galleryPublicData.publicUrl} | ${caption}` : galleryPublicData.publicUrl);
       }
 
       setUploadProgress('Guardando publicación en base de datos…');
@@ -825,18 +828,24 @@ export default function Admin() {
   function removeNewGallery(index: number) {
     setGalleryFiles((current) => current.filter((_, i) => i !== index));
     setGalleryPreviews((current) => current.filter((_, i) => i !== index));
+    setNewGalleryCaptions((current) => current.filter((_, i) => i !== index));
   }
 
   const previewParagraphs = splitEditorialParagraphs(form.body);
 
   const previewPhotos = [
-    ...existingGalleryUrls.map((src, index) => ({
-      src,
-      alt: `Fotografía ${index + 1} de ${form.event_name || form.title || 'GLAMORA'}`,
-    })),
+    ...existingGalleryUrls.map((entry, index) => {
+      const [src, caption] = (entry.includes('|') ? entry.split('|') : [entry, '']).map((s) => s.trim());
+      return {
+        src,
+        alt: caption || `Fotografía ${index + 1} de ${form.event_name || form.title || 'GLAMORA'}`,
+        caption,
+      };
+    }),
     ...galleryPreviews.map((src, index) => ({
       src,
       alt: `Nueva fotografía ${index + 1} de ${form.event_name || form.title || 'GLAMORA'}`,
+      caption: newGalleryCaptions[index] || '',
     })),
   ];
 
@@ -1582,91 +1591,114 @@ export default function Admin() {
                     gridTemplateColumns: 'repeat(auto-fill, minmax(125px, 1fr))',
                     gap: 14,
                   }}>
-                    {existingGalleryUrls.map((src, index) => (
-                      <div key={`${src}-${index}`} style={{
-                        minWidth: 0,
-                        border: '1px solid #e7ded5',
-                        background: '#fff',
-                        padding: 7,
-                      }}>
-                        <div style={{
-                          position: 'relative',
-                          width: '100%',
-                          aspectRatio: '3 / 4',
-                          background: '#f3f0ec',
-                          overflow: 'hidden',
+                    {existingGalleryUrls.map((rawEntry, index) => {
+                      const [photoUrl, photoCaption] = (rawEntry.includes('|') ? rawEntry.split('|') : [rawEntry, '']).map((s) => s.trim());
+                      return (
+                        <div key={`${photoUrl}-${index}`} style={{
+                          minWidth: 0,
+                          border: '1px solid #e7ded5',
+                          background: '#fff',
+                          padding: 7,
                         }}>
-                          <img
-                            src={src}
-                            alt={`Fotografía guardada ${index + 1}`}
-                            loading="lazy"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
-                              if (fallback) fallback.style.display = 'flex';
+                          <div style={{
+                            position: 'relative',
+                            width: '100%',
+                            aspectRatio: '3 / 4',
+                            background: '#f3f0ec',
+                            overflow: 'hidden',
+                          }}>
+                            <img
+                              src={photoUrl}
+                              alt={`Fotografía guardada ${index + 1}`}
+                              loading="lazy"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div style={{
+                              display: 'none',
+                              position: 'absolute',
+                              inset: 0,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              padding: 10,
+                              textAlign: 'center',
+                              color: '#711C32',
+                              fontSize: 11,
+                              background: '#f3f0ec',
+                            }}>
+                              No se pudo cargar esta imagen
+                            </div>
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 4,
+                            paddingTop: 8,
+                          }}>
+                            <small style={{ color: '#777', letterSpacing: '.08em', fontSize: 10 }}>
+                              FOTO {String(index + 1).padStart(2, '0')}
+                            </small>
+                            <div style={{ display: 'flex', gap: 3 }}>
+                              <button
+                                type="button"
+                                className="text-link"
+                                title="Mover antes"
+                                aria-label={`Mover fotografía ${index + 1} antes`}
+                                disabled={index === 0 || busy}
+                                onClick={() => moveExistingGallery(index, -1)}
+                                style={{ padding: '2px 4px' }}
+                              >↑</button>
+                              <button
+                                type="button"
+                                className="text-link"
+                                title="Mover después"
+                                aria-label={`Mover fotografía ${index + 1} después`}
+                                disabled={index === existingGalleryUrls.length - 1 || busy}
+                                onClick={() => moveExistingGallery(index, 1)}
+                                style={{ padding: '2px 4px' }}
+                              >↓</button>
+                              <button
+                                type="button"
+                                className="text-link"
+                                title="Quitar de la galería"
+                                aria-label={`Quitar fotografía ${index + 1}`}
+                                disabled={busy}
+                                onClick={() => removeExistingGallery(index)}
+                                style={{ padding: '2px 4px', color: '#711C32' }}
+                              >×</button>
+                            </div>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Pie de foto / descripción…"
+                            value={photoCaption || ''}
+                            onChange={(e) => {
+                              const next = [...existingGalleryUrls];
+                              const newCaption = e.target.value;
+                              next[index] = newCaption ? `${photoUrl} | ${newCaption}` : photoUrl;
+                              update('gallery_urls', next.join('\n'));
+                            }}
+                            style={{
+                              width: '100%',
+                              fontSize: '11px',
+                              padding: '5px 7px',
+                              marginTop: '6px',
+                              border: '1px solid #d9c2b3',
+                              background: '#fcfbfa',
+                              boxSizing: 'border-box',
                             }}
                           />
-                          <div style={{
-                            display: 'none',
-                            position: 'absolute',
-                            inset: 0,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 10,
-                            textAlign: 'center',
-                            color: '#711C32',
-                            fontSize: 11,
-                            background: '#f3f0ec',
-                          }}>
-                            No se pudo cargar esta imagen
-                          </div>
                         </div>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: 4,
-                          paddingTop: 8,
-                        }}>
-                          <small style={{ color: '#777', letterSpacing: '.08em' }}>
-                            FOTO {String(index + 1).padStart(2, '0')}
-                          </small>
-                          <div style={{ display: 'flex', gap: 3 }}>
-                            <button
-                              type="button"
-                              className="text-link"
-                              title="Mover antes"
-                              aria-label={`Mover fotografía ${index + 1} antes`}
-                              disabled={index === 0 || busy}
-                              onClick={() => moveExistingGallery(index, -1)}
-                              style={{ padding: '2px 4px' }}
-                            >↑</button>
-                            <button
-                              type="button"
-                              className="text-link"
-                              title="Mover después"
-                              aria-label={`Mover fotografía ${index + 1} después`}
-                              disabled={index === existingGalleryUrls.length - 1 || busy}
-                              onClick={() => moveExistingGallery(index, 1)}
-                              style={{ padding: '2px 4px' }}
-                            >↓</button>
-                            <button
-                              type="button"
-                              className="text-link"
-                              title="Quitar de la galería"
-                              aria-label={`Quitar fotografía ${index + 1}`}
-                              disabled={busy}
-                              onClick={() => removeExistingGallery(index)}
-                              style={{ padding: '2px 4px', color: '#711C32' }}
-                            >×</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <small className="form-note" style={{ display: 'block', marginTop: 10 }}>
-                    Los cambios de orden y las eliminaciones se aplicarán al guardar la publicación.
+                    Puedes escribir una descripción o pie de foto para cada imagen. Los cambios se guardarán al pulsar el botón principal.
                   </small>
                 </div>
               )}
@@ -1699,7 +1731,7 @@ export default function Admin() {
                           paddingTop: 8,
                           gap: 6,
                         }}>
-                          <small style={{ color: '#777', letterSpacing: '.08em' }}>
+                          <small style={{ color: '#777', letterSpacing: '.08em', fontSize: 10 }}>
                             NUEVA {String(index + 1).padStart(2, '0')}
                           </small>
                           <button
@@ -1710,6 +1742,25 @@ export default function Admin() {
                             style={{ color: '#711C32' }}
                           >QUITAR</button>
                         </div>
+                        <input
+                          type="text"
+                          placeholder="Pie de foto opcional…"
+                          value={newGalleryCaptions[index] || ''}
+                          onChange={(e) => {
+                            const updated = [...newGalleryCaptions];
+                            updated[index] = e.target.value;
+                            setNewGalleryCaptions(updated);
+                          }}
+                          style={{
+                            width: '100%',
+                            fontSize: '11px',
+                            padding: '5px 7px',
+                            marginTop: '6px',
+                            border: '1px solid #d9c2b3',
+                            background: '#fcfbfa',
+                            boxSizing: 'border-box',
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
@@ -1722,7 +1773,7 @@ export default function Admin() {
                   rows={3}
                   value={form.gallery_urls}
                   onChange={(e) => update('gallery_urls', e.target.value)}
-                  placeholder={'https://…/foto-1.jpg\nhttps://…/foto-2.jpg'}
+                  placeholder={'https://…/foto-1.jpg | Pie de foto opcional\nhttps://…/foto-2.jpg | Pie de foto opcional'}
                 />
               </label>
             </div>
@@ -2155,8 +2206,22 @@ export default function Admin() {
                   <section className="article-gallery">
                     <div className="section-heading">
                       <div>
-                        <span className="section-overline">GLAMORA SOCIAL · PHOTO DIARY</span>
-                        <h2>{form.event_name || 'Momentos de la cobertura'}</h2>
+                        <span className="section-overline">
+                          {(form.is_social || form.category?.toUpperCase() === 'SOCIEDAD')
+                            ? 'GLAMORA SOCIAL · CRÓNICA'
+                            : 'GLAMORA EDITORIAL · DIARIO VISUAL'}
+                        </span>
+                        <h2>
+                          {form.event_name || (
+                            (form.is_social || form.category?.toUpperCase() === 'SOCIEDAD')
+                              ? 'ENCUENTROS & MOMENTOS'
+                              : form.category?.toUpperCase() === 'MODA'
+                                ? 'DETALLES DE ESTILO'
+                                : form.category?.toUpperCase() === 'GASTRONOMÍA'
+                                  ? 'ATMÓSFERA & SABOR'
+                                  : 'GALERÍA DE LA HISTORIA'
+                          )}
+                        </h2>
                       </div>
                       <span className="section-action">
                         {form.venue || form.city || 'BOLIVIA'}
@@ -2178,8 +2243,7 @@ export default function Admin() {
                               />
                             </div>
                             <figcaption>
-                              <span>{String(index + 1).padStart(2, '0')}</span>
-                              FOTOGRAFÍA {String(index + 1).padStart(2, '0')}
+                              {item.caption || `Fotografía ${String(index + 1).padStart(2, '0')}`}
                             </figcaption>
                           </figure>
                         ))}

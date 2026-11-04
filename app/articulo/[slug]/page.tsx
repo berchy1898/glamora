@@ -103,31 +103,39 @@ export default async function ArticlePage({
 
     let peopleInFrame: string | undefined = undefined;
 
+    const isSocialContext = Boolean(a.is_social || a.category?.toUpperCase() === 'SOCIEDAD' || a.event_name);
+
     // Si no se asignó un pie de foto personalizado en la URL:
     if (!caption) {
-      if (peopleTags.length > 0) {
-        if (peopleTags.length === 1) {
-          peopleInFrame = peopleTags[0];
-          caption = a.event_name ? `${a.event_name}${a.venue ? ` · ${a.venue}` : ''}` : a.title;
-        } else if (i < peopleTags.length) {
-          peopleInFrame = peopleTags[i];
-          caption = a.event_name ? `${a.event_name}` : a.title;
-        } else {
-          caption = a.event_name ? `${a.event_name}${a.venue ? ` · ${a.venue}` : ''}` : a.title;
+      if (isSocialContext) {
+        if (peopleTags.length > 0) {
+          if (peopleTags.length === 1) {
+            peopleInFrame = peopleTags[0];
+            caption = a.event_name ? `${a.event_name}${a.venue ? ` · ${a.venue}` : ''}` : '';
+          } else if (i < peopleTags.length) {
+            peopleInFrame = peopleTags[i];
+            caption = a.event_name ? `${a.event_name}` : '';
+          } else {
+            caption = a.event_name ? `${a.event_name}${a.venue ? ` · ${a.venue}` : ''}` : '';
+          }
+        } else if (a.event_name) {
+          caption = `${a.event_name}${a.venue ? ` · ${a.venue}` : ''}`;
         }
-      } else if (a.event_name) {
-        caption = `${a.event_name}${a.venue ? ` · ${a.venue}` : ''}`;
-      } else {
-        caption = a.city ? `Cobertura editorial · ${a.city}` : a.title;
       }
     }
 
     return {
       src,
-      alt: caption || `Fotografía ${i + 1} de ${a.event_name || a.title}`,
+      alt: caption || `Fotografía ${i + 1} · ${a.title}`,
       caption,
       people: peopleInFrame,
-      overline: peopleInFrame ? 'EN EL ENCUADRE' : (a.category || 'GLAMORA SOCIAL'),
+      overline: peopleInFrame
+        ? 'EN EL ENCUADRE'
+        : isSocialContext
+          ? 'GLAMORA SOCIAL'
+          : a.category
+            ? `GLAMORA · ${a.category.toUpperCase()}`
+            : undefined,
     };
   });
 
@@ -181,9 +189,21 @@ export default async function ArticlePage({
             <div className="section-heading">
               <div>
                 <span className="section-overline">
-                  GLAMORA SOCIAL · PHOTO DIARY
+                  {(a.is_social || a.category?.toUpperCase() === 'SOCIEDAD')
+                    ? 'GLAMORA SOCIAL · CRÓNICA'
+                    : 'GLAMORA EDITORIAL · DIARIO VISUAL'}
                 </span>
-                <h2>{a.event_name || 'Momentos de la cobertura'}</h2>
+                <h2>
+                  {a.event_name || (
+                    (a.is_social || a.category?.toUpperCase() === 'SOCIEDAD')
+                      ? 'ENCUENTROS & MOMENTOS'
+                      : a.category?.toUpperCase() === 'MODA'
+                        ? 'DETALLES DE ESTILO'
+                        : a.category?.toUpperCase() === 'GASTRONOMÍA'
+                          ? 'ATMÓSFERA & SABOR'
+                          : 'GALERÍA DE LA HISTORIA'
+                  )}
+                </h2>
               </div>
 
               <span className="section-action">

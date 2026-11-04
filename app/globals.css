@@ -4728,10 +4728,10 @@ body {
 
 .moment-gallery-editorial .moment-rhythm-portrait-card {
   grid-column: span 4;
-  padding: 18px 18px 22px;
-  background: #fbf8f3;
-  border: 1px solid #dfd5ca;
-  box-shadow: 0 18px 40px rgba(31, 24, 21, .04);
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .moment-gallery-editorial .moment-rhythm-offset-up {
@@ -4767,16 +4767,7 @@ body {
 }
 
 .moment-folio-badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 4px 9px;
-  background: rgba(23, 19, 26, .74);
-  backdrop-filter: blur(4px);
-  color: var(--champagne, #d9b9a4);
-  font: italic 13px/1 var(--font-editorial);
-  letter-spacing: .08em;
-  pointer-events: none;
+  display: none !important;
 }
 
 .moment-editorial-caption {
