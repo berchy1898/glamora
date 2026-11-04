@@ -99,6 +99,9 @@ export function EditorialGallery({
                     unoptimized={item.src.startsWith('http')}
                     sizes="(max-width: 700px) 100vw, 50vw"
                   />
+                  <span className="moment-folio-badge" aria-hidden="true">
+                    {indexFormatted}
+                  </span>
                   <span className="moment-zoom-badge" aria-hidden="true">
                     AMPLIAR ↗
                   </span>

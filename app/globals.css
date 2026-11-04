@@ -75,12 +75,12 @@ img{max-width:100%}
 .social-feature-copy h2{font:clamp(29px,4vw,48px)/1.05 Georgia,serif;font-weight:400;margin:14px 0}
 .social-feature-copy p{color:var(--muted);font-size:13px;line-height:1.8}
 .moment-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0 70px}
-.moment{margin:0;min-width:0}
-.moment>div{position:relative;overflow:hidden;background:#ddd;aspect-ratio:4/5}
-.moment-1>div,.moment-3>div{aspect-ratio:4/5}
+.moment{margin:0;min-width:0;background:transparent}
+.moment>div{position:relative;overflow:hidden;background:transparent !important;aspect-ratio:3/4}
+.moment-1>div,.moment-3>div{aspect-ratio:3/4}
 .moment img{
-  object-fit:contain !important;
-  background:#f4f1ed;
+  object-fit:cover !important;
+  background:transparent !important;
 }
 .moment figcaption{padding-top:10px;font-size:8px;letter-spacing:.12em;color:#6c625c}
 .moment figcaption span{color:var(--wine);padding-right:10px}
@@ -2193,13 +2193,16 @@ body {
 .moment-interactive .moment-image-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 2 / 3;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
-  background: #eee9e2;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .moment-interactive .moment-image-frame img {
-  object-fit: contain !important;
+  object-fit: cover !important;
+  background: transparent !important;
   transition: transform .75s cubic-bezier(.2, .7, .2, 1);
 }
 
@@ -4762,12 +4765,25 @@ body {
   width: 100% !important;
   height: auto !important;
   max-height: 640px;
-  object-fit: contain !important;
+  object-fit: cover !important;
+  background: transparent !important;
   display: block;
 }
 
 .moment-folio-badge {
-  display: none !important;
+  display: inline-flex !important;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 8px;
+  background: rgba(23, 19, 26, .72);
+  backdrop-filter: blur(4px);
+  color: #dfcfbe;
+  font: italic 11px/1 Georgia, serif;
+  letter-spacing: .12em;
+  border-radius: 1px;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .moment-editorial-caption {
@@ -4775,7 +4791,7 @@ body {
   flex-direction: column;
   gap: 3px !important;
   padding-top: 10px !important;
-  border-top: 1px solid rgba(31, 26, 23, .09);
+  border-top: none !important;
   margin-top: 10px !important;
   text-align: left;
 }
