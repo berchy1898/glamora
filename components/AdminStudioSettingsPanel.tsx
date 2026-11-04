@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SocialIcon, type SocialPlatform } from '@/components/SocialIcons';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 type SocialLinksState = Record<SocialPlatform, string>;
 
@@ -76,18 +77,15 @@ export function AdminStudioSettingsPanel() {
 
   useEffect(() => {
     let active = true;
+    const db = supabaseBrowser();
+
+    // 1. Cargar redes y vistas de la revista
     fetch('/api/studio-config')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!active || !data) return;
         if (data.socials) {
           setSocials((prev) => ({ ...prev, ...data.socials }));
-        }
-        if (Array.isArray(data.subscribers)) {
-          setSubscribers(data.subscribers);
-        }
-        if (Array.isArray(data.contactMessages)) {
-          setContactMessages(data.contactMessages);
         }
         if (data.articleViews && typeof data.articleViews === 'object') {
           const sum = Object.values(data.articleViews as Record<string, number>).reduce(
@@ -96,8 +94,52 @@ export function AdminStudioSettingsPanel() {
           );
           setTotalViews(sum);
         }
+        if (Array.isArray(data.subscribers) && data.subscribers.length > 0) {
+          setSubscribers(data.subscribers);
+        }
+        if (Array.isArray(data.contactMessages) && data.contactMessages.length > 0) {
+          setContactMessages(data.contactMessages);
+        }
       })
       .catch(() => {});
+
+    // 2. Cargar directamente desde Supabase con la sesión del administrador
+    Promise.all([
+      db
+        .from('newsletter_subscribers')
+        .select('email, subscribed_at')
+        .order('subscribed_at', { ascending: false }),
+      db
+        .from('contact_leads')
+        .select('*')
+        .order('created_at', { ascending: false }),
+    ])
+      .then(([subsRes, leadsRes]) => {
+        if (!active) return;
+        if (subsRes.data && Array.isArray(subsRes.data) && subsRes.data.length > 0) {
+          setSubscribers(
+            subsRes.data.map((s: any) => ({
+              email: s.email,
+              subscribedAt: s.subscribed_at,
+            }))
+          );
+        }
+        if (leadsRes.data && Array.isArray(leadsRes.data) && leadsRes.data.length > 0) {
+          setContactMessages(
+            leadsRes.data.map((l: any) => ({
+              id: l.id,
+              nombre: l.name,
+              empresa: l.company || '',
+              email: l.email,
+              tipo: l.inquiry_type || 'General',
+              mensaje: l.message,
+              createdAt: l.created_at,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
@@ -138,15 +180,19 @@ export function AdminStudioSettingsPanel() {
 
   async function deleteContactMessage(id: string) {
     try {
-      const res = await fetch('/api/studio-config', {
+      const db = supabaseBrowser();
+      await db.from('contact_leads').delete().eq('id', id);
+      await fetch('/api/studio-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete_contact_message', id }),
       });
-      if (res.ok) {
-        setContactMessages((prev) => prev.filter((m) => m.id !== id));
-      }
+      setContactMessages((prev) => prev.filter((m) => m.id !== id));
+      setStatusMsg('Mensaje archivado correctamente ✓');
     } catch {
+      setStatusMsg('No se pudo archivar el mensaje.');
+    }
+  }
       // ignore
     }
   }
