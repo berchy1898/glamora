@@ -17,143 +17,97 @@ export function HomeIssueKiosk({ issue }: HomeIssueKioskProps) {
         month: 'long',
         year: 'numeric',
       }).format(new Date(issue.published_at))
-    : 'EDICIÓN ACTUAL';
-
-  const fascicles = [
-    {
-      label: 'MODA & ATELIER',
-      desc: 'Sastrería botánica, lino & alta costura',
-      badge: 'FAS. 01',
-    },
-    {
-      label: 'SOCIEDAD & GALAS',
-      desc: 'Noches exclusivas, veladas de autor y Who’s Who',
-      badge: 'FAS. 02',
-    },
-    {
-      label: 'DIÁLOGOS & VOCES',
-      desc: 'Perfiles profundos con creadores e innovadores',
-      badge: 'FAS. 03',
-    },
-    {
-      label: 'GOURMET & LIFESTYLE',
-      desc: 'Coctelería de autor, maridajes y templos del buen vivir',
-      badge: 'FAS. 04',
-    },
-  ];
+    : 'NOVIEMBRE DE 2026';
 
   return (
-    <section className="mag-kiosk-section" aria-label="Escaparate The Issues">
-      <div className="container mag-kiosk-inner">
-        <div className="mag-kiosk-header">
-          <div className="mag-kiosk-eyebrow">
-            <span className="mag-kiosk-pill">THE DIGITAL ISSUE</span>
-            <span className="mag-kiosk-sep">✦</span>
-            <span>REVISTA EDITORIAL DE COLECCIÓN</span>
-          </div>
-          <h2 className="mag-kiosk-heading">THE ISSUES · LA REVISTA</h2>
-          <p className="mag-kiosk-subheading">
-            Una experiencia editorial de alta gama. Formato digital de doble página con tipografía Didone,
-            fasículos temáticos y crónicas de autor.
-          </p>
-        </div>
+    <section className="mag-vogue-section" aria-label="GLAMORA The Issue">
+      <div className="container mag-vogue-inner">
+        {/* Header - Inspired directly by Vogue & Vanity Fair */}
+        <header className="mag-vogue-header">
+          <span className="mag-vogue-overline">
+            VISTA PREVIA INTERACTIVA (HAZ CLIC EN LA PORTADA PARA HOJEAR)
+          </span>
+          <h2 className="mag-vogue-title">
+            <span className="mag-vogue-title-brand">GLAMORA</span>{' '}
+            <span className="mag-vogue-title-issue">The Issue</span>
+          </h2>
+        </header>
 
-        <div className="mag-kiosk-stage">
-          {/* 3D Magazine Cover Showcase */}
-          <div className="mag-kiosk-book-col">
+        <div className="mag-vogue-grid">
+          {/* Cover Presentation: Clean, majestic editorial portrait without stickers or glare */}
+          <div className="mag-vogue-cover-col">
             <Link
               href={`/ediciones/${issue.slug}`}
-              className="mag-kiosk-book-link"
-              title={`Abrir edición digital Nº ${issueNum}`}
+              className="mag-vogue-cover-link"
+              title={`Hojear GLAMORA The Issue Nº ${issueNum}`}
             >
-              <div className="mag-kiosk-book-wrap">
-                {/* Book 3D spine shadow */}
-                <div className="mag-kiosk-spine-rib" aria-hidden="true" />
-                
-                {/* Book Cover */}
-                <div className="mag-kiosk-cover-face">
-                  {issue.cover_image ? (
-                    <Image
-                      src={issue.cover_image}
-                      alt={`Portada The Issues Nº ${issueNum} - ${issue.title}`}
-                      fill
-                      unoptimized={issue.cover_image.startsWith('http')}
-                      sizes="(max-width: 768px) 90vw, 380px"
-                      className="mag-kiosk-cover-img"
-                    />
-                  ) : (
-                    <div className="mag-kiosk-cover-placeholder">
-                      <span className="mag-kiosk-ph-brand">GLAMORA</span>
-                      <span className="mag-kiosk-ph-num">Nº {issueNum}</span>
-                      <span className="mag-kiosk-ph-theme">{issue.title}</span>
-                    </div>
-                  )}
-
-                  {/* High gloss reflection overlay */}
-                  <div className="mag-kiosk-glare" aria-hidden="true" />
-
-                  {/* Gold seal */}
-                  <div className="mag-kiosk-seal">
-                    <span>EDICIÓN</span>
-                    <strong>Nº {issueNum}</strong>
-                    <small>DIGITAL</small>
+              <div className="mag-vogue-cover-frame">
+                {issue.cover_image ? (
+                  <Image
+                    src={issue.cover_image}
+                    alt={`Portada GLAMORA The Issue Nº ${issueNum} - ${issue.title}`}
+                    fill
+                    unoptimized={issue.cover_image.startsWith('http')}
+                    sizes="(max-width: 768px) 90vw, 420px"
+                    className="mag-vogue-cover-img"
+                    priority
+                  />
+                ) : (
+                  <div className="mag-vogue-cover-placeholder">
+                    <span className="ph-brand">GLAMORA</span>
+                    <span className="ph-num">Nº {issueNum}</span>
+                    <p className="ph-title">{issue.title}</p>
                   </div>
-                </div>
-
-                {/* Right page depth stack */}
-                <div className="mag-kiosk-page-stack" aria-hidden="true" />
+                )}
+                {/* Subtle natural paper book spine shadow */}
+                <div className="mag-vogue-spine-shadow" aria-hidden="true" />
               </div>
             </Link>
-
-            <div className="mag-kiosk-cover-hint">
-              <span>✦ Haz clic para abrir el Lector Digital</span>
-            </div>
+            <span className="mag-vogue-click-cue">✦ Haz clic en la portada para abrir</span>
           </div>
 
-          {/* Editorial Details & Fascicles Column */}
-          <div className="mag-kiosk-info-col">
-            <div className="mag-kiosk-meta-badge">
+          {/* Editorial Content: Pure haute couture refinement, no robotic jargon */}
+          <div className="mag-vogue-copy-col">
+            <div className="mag-vogue-meta">
               <span>VOLUMEN {new Date().getFullYear()}</span>
-              <span>·</span>
+              <span className="sep">·</span>
               <span style={{ textTransform: 'uppercase' }}>{formattedDate}</span>
-              <span>·</span>
+              <span className="sep">·</span>
               <span>BOLIVIA</span>
             </div>
 
-            <h3 className="mag-kiosk-issue-title">{issue.title}</h3>
+            <h3 className="mag-vogue-headline">{issue.title}</h3>
 
-            <p className="mag-kiosk-issue-desc">
+            <p className="mag-vogue-desc">
               {issue.description ||
                 'Una cuidada composición de crónicas de moda, veladas de gala, perfiles y gastronomía de autor curada por el equipo de GLAMORA.'}
             </p>
 
-            {/* 4 Fascicles Preview */}
-            <div className="mag-kiosk-fascicles-box">
-              <span className="mag-kiosk-fascicles-label">FASCÍCULOS DE ESTA EDICIÓN:</span>
-              <div className="mag-kiosk-fascicles-grid">
-                {fascicles.map((f) => (
-                  <div key={f.label} className="mag-kiosk-fas-item">
-                    <span className="mag-kiosk-fas-badge">{f.badge}</span>
-                    <div className="mag-kiosk-fas-text">
-                      <strong>{f.label}</strong>
-                      <small>{f.desc}</small>
-                    </div>
-                  </div>
-                ))}
+            {/* Editorial Columns / Sections (Vogue Contents style) */}
+            <div className="mag-vogue-contents">
+              <span className="mag-vogue-contents-label">EN ESTE NÚMERO</span>
+              <div className="mag-vogue-contents-tags">
+                <span className="tag-item">Moda &amp; Atelier</span>
+                <span className="tag-sep">/</span>
+                <span className="tag-item">Sociedad &amp; Galas</span>
+                <span className="tag-sep">/</span>
+                <span className="tag-item">Diálogos</span>
+                <span className="tag-sep">/</span>
+                <span className="tag-item">Gourmet &amp; Estilo</span>
               </div>
             </div>
 
-            {/* CTAs */}
-            <div className="mag-kiosk-actions">
+            {/* Haute Couture Actions */}
+            <div className="mag-vogue-actions">
               <Link
                 href={`/ediciones/${issue.slug}`}
-                className="mag-kiosk-cta-primary"
+                className="mag-vogue-cta-primary"
               >
                 <span>HOJEAR EDICIÓN DIGITAL Nº {issueNum}</span>
-                <span className="mag-kiosk-cta-arrow">↗</span>
+                <span className="arrow">↗</span>
               </Link>
-              <Link href="/ediciones" className="mag-kiosk-cta-secondary">
-                <span>VER ARCHIVO Y HEMEROTECA</span>
+              <Link href="/ediciones" className="mag-vogue-cta-secondary">
+                <span>VER ARCHIVO DE EDICIONES</span>
               </Link>
             </div>
           </div>
@@ -162,3 +116,6 @@ export function HomeIssueKiosk({ issue }: HomeIssueKioskProps) {
     </section>
   );
 }
+
+// Export alias for compatibility
+export { HomeIssueKiosk as HomeIssueShowcase };

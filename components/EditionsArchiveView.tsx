@@ -179,10 +179,6 @@ export function EditionsArchiveView({ issues }: EditionsArchiveViewProps) {
                       <strong>Nº {String(featured.issue_number).padStart(2, '0')}</strong>
                     </div>
                   )}
-                  <div className="monograph-seal">
-                    <span>EDICIÓN ACTUAL</span>
-                    <strong>Nº {String(featured.issue_number).padStart(2, '0')}</strong>
-                  </div>
                 </Link>
               </div>
 
@@ -208,7 +204,7 @@ export function EditionsArchiveView({ issues }: EditionsArchiveViewProps) {
                   <div className="monograph-feature-item">
                     <span className="mono-dot">✦</span>
                     <div>
-                      <strong>Fascículos Temáticos</strong>
+                      <strong>Secciones Editoriales</strong>
                       <small>Moda & Atelier · Sociedad & Galas · Diálogos · Gourmet</small>
                     </div>
                   </div>

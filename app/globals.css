@@ -6341,402 +6341,299 @@ body {
 }
 
 /* ==========================================================================
-   OPCIÓN A: ESCAPARATE DE LUJO DE THE ISSUES EN HOME (.mag-kiosk)
+   GLAMORA The Issue — ESCAPARATE EDITORIAL HAUTE COUTURE (.mag-vogue)
+   Inspirado en la pureza tipográfica y el minimalismo de Vogue & Vanity Fair
    ========================================================================== */
-.mag-kiosk-section {
-  padding: 80px 0;
-  background: radial-gradient(ellipse at 50% 20%, #1a1715 0%, #0d0b0a 70%, #080706 100%);
-  border-top: 1px solid rgba(201, 163, 107, 0.25);
-  border-bottom: 1px solid rgba(201, 163, 107, 0.25);
+.mag-vogue-section {
+  padding: 88px 0 96px 0;
+  background-color: #f9f6f0;
+  border-top: 1px solid rgba(139, 38, 53, 0.08);
+  border-bottom: 1px solid rgba(139, 38, 53, 0.08);
   position: relative;
-  overflow: hidden;
 }
 
-.mag-kiosk-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #c9a36b, transparent);
-}
-
-.mag-kiosk-inner {
-  max-width: 1240px;
+.mag-vogue-inner {
+  max-width: 1180px;
   margin: 0 auto;
 }
 
-.mag-kiosk-header {
+.mag-vogue-header {
   text-align: center;
-  max-width: 720px;
+  max-width: 800px;
   margin: 0 auto 52px auto;
 }
 
-.mag-kiosk-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
+.mag-vogue-overline {
+  display: block;
   font-family: var(--font-serif, Didot, serif);
   font-size: 11px;
-  letter-spacing: 0.26em;
-  color: #c9a36b;
+  letter-spacing: 0.28em;
+  color: #8b2635;
   text-transform: uppercase;
   margin-bottom: 14px;
+  font-weight: 500;
 }
 
-.mag-kiosk-pill {
-  border: 1px solid rgba(201, 163, 107, 0.5);
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(201, 163, 107, 0.08);
-  font-size: 10px;
-}
-
-.mag-kiosk-sep {
-  opacity: 0.6;
-}
-
-.mag-kiosk-heading {
+.mag-vogue-title {
   font-family: var(--font-serif, Didot, serif);
-  font-size: clamp(32px, 4vw, 44px);
+  font-size: clamp(34px, 4.2vw, 48px);
   font-weight: 400;
+  color: #141211;
   letter-spacing: 0.12em;
-  color: #f6f2ec;
-  margin-bottom: 14px;
+  margin: 0;
+  line-height: 1.15;
 }
 
-.mag-kiosk-subheading {
-  font-size: 14.5px;
-  line-height: 1.65;
-  color: #ded3c5;
-  font-weight: 300;
+.mag-vogue-title-brand {
+  font-weight: 700;
+  letter-spacing: 0.16em;
 }
 
-.mag-kiosk-stage {
+.mag-vogue-title-issue {
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: #141211;
+}
+
+.mag-vogue-grid {
   display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 60px;
+  grid-template-columns: 360px 1fr;
+  gap: 64px;
   align-items: center;
 }
 
-/* 3D Magazine Cover Presentation */
-.mag-kiosk-book-col {
+/* Clean Editorial Cover: No stickers, no round stamps, pure fashion portrait */
+.mag-vogue-cover-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  perspective: 1200px;
 }
 
-.mag-kiosk-book-link {
+.mag-vogue-cover-link {
   text-decoration: none;
   display: block;
-}
-
-.mag-kiosk-book-wrap {
   position: relative;
-  width: 330px;
-  height: 460px;
-  transform-style: preserve-3d;
-  transform: rotateY(-11deg) rotateX(4deg);
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
-  box-shadow: -15px 20px 40px rgba(0, 0, 0, 0.8), -2px 0 10px rgba(201, 163, 107, 0.3);
-  border-radius: 3px 6px 6px 3px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
 }
 
-.mag-kiosk-book-link:hover .mag-kiosk-book-wrap {
-  transform: rotateY(-3deg) rotateX(1deg) translateY(-8px);
-  box-shadow: -22px 28px 55px rgba(0, 0, 0, 0.9), -4px 0 16px rgba(201, 163, 107, 0.5);
+.mag-vogue-cover-link:hover {
+  transform: translateY(-6px);
 }
 
-.mag-kiosk-spine-rib {
+.mag-vogue-cover-frame {
+  position: relative;
+  width: 340px;
+  height: 470px;
+  background-color: #1a1715;
+  box-shadow: 0 16px 38px rgba(20, 18, 17, 0.16), 0 2px 8px rgba(20, 18, 17, 0.08);
+  border-radius: 1px 3px 3px 1px;
+  overflow: hidden;
+}
+
+.mag-vogue-cover-img {
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.mag-vogue-cover-link:hover .mag-vogue-cover-img {
+  transform: scale(1.02);
+}
+
+.mag-vogue-spine-shadow {
   position: absolute;
   top: 0;
   left: 0;
-  width: 14px;
+  width: 10px;
   height: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.6) 40%, rgba(255,255,255,0.1) 80%, rgba(0,0,0,0.4) 100%);
-  z-index: 10;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0.06) 60%, transparent 100%);
   pointer-events: none;
 }
 
-.mag-kiosk-cover-face {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background-color: #1a1614;
-  border-radius: 2px 6px 6px 2px;
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.mag-kiosk-cover-img {
-  object-fit: cover;
-}
-
-.mag-kiosk-cover-placeholder {
+.mag-vogue-cover-placeholder {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   padding: 30px;
   text-align: center;
-  background: #151311;
-  border: 1px solid rgba(201, 163, 107, 0.4);
+  background: #181513;
+  color: #f7f4ee;
 }
 
-.mag-kiosk-ph-brand {
+.mag-vogue-cover-placeholder .ph-brand {
   font-family: var(--font-serif, Didot, serif);
   font-size: 32px;
   letter-spacing: 0.25em;
-  color: #f6f2ec;
   margin-bottom: 8px;
 }
 
-.mag-kiosk-ph-num {
-  font-size: 16px;
-  letter-spacing: 0.15em;
+.mag-vogue-cover-placeholder .ph-num {
+  font-size: 14px;
+  letter-spacing: 0.18em;
   color: #c9a36b;
   margin-bottom: 16px;
 }
 
-.mag-kiosk-ph-theme {
-  font-size: 14px;
-  line-height: 1.4;
+.mag-vogue-cover-placeholder .ph-title {
+  font-size: 13.5px;
+  line-height: 1.45;
   color: #ded3c5;
 }
 
-.mag-kiosk-glare {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, transparent 40%, rgba(201, 163, 107, 0.08) 100%);
-  pointer-events: none;
-  z-index: 5;
-}
-
-.mag-kiosk-seal {
-  position: absolute;
-  bottom: 24px;
-  right: 24px;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #25201c 40%, #0d0b0a 100%);
-  border: 1.5px solid #c9a36b;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  z-index: 8;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-}
-
-.mag-kiosk-seal span {
-  font-size: 8px;
-  letter-spacing: 0.16em;
-  color: #ded3c5;
-}
-
-.mag-kiosk-seal strong {
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  color: #c9a36b;
-  font-weight: 700;
-}
-
-.mag-kiosk-seal small {
-  font-size: 7.5px;
-  letter-spacing: 0.14em;
-  color: #f6f2ec;
-}
-
-.mag-kiosk-page-stack {
-  position: absolute;
-  top: 4px;
-  right: -9px;
-  bottom: 4px;
-  width: 10px;
-  background: repeating-linear-gradient(
-    90deg,
-    #ded3c5 0px,
-    #ded3c5 1px,
-    #b0a394 1px,
-    #b0a394 2px
-  );
-  border-radius: 0 3px 3px 0;
-  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
-  transform: translateZ(-2px);
-}
-
-.mag-kiosk-cover-hint {
-  margin-top: 20px;
+.mag-vogue-click-cue {
+  margin-top: 18px;
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #c9a36b;
+  color: #8b8073;
 }
 
-/* Info Column */
-.mag-kiosk-info-col {
-  padding-left: 20px;
+/* Editorial Copy Column */
+.mag-vogue-copy-col {
+  padding-left: 10px;
 }
 
-.mag-kiosk-meta-badge {
+.mag-vogue-meta {
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 11px;
   letter-spacing: 0.22em;
-  color: #c9a36b;
-  margin-bottom: 16px;
+  color: #8b2635;
+  margin-bottom: 18px;
+  font-weight: 500;
 }
 
-.mag-kiosk-issue-title {
+.mag-vogue-meta .sep {
+  opacity: 0.5;
+}
+
+.mag-vogue-headline {
   font-family: var(--font-serif, Didot, serif);
-  font-size: clamp(28px, 3.2vw, 38px);
+  font-size: clamp(30px, 3.4vw, 42px);
   font-weight: 400;
-  line-height: 1.25;
-  color: #f6f2ec;
+  line-height: 1.22;
+  color: #141211;
   margin-bottom: 20px;
   letter-spacing: 0.02em;
 }
 
-.mag-kiosk-issue-desc {
-  font-size: 14.5px;
-  line-height: 1.7;
-  color: #ded3c5;
-  margin-bottom: 32px;
-  max-width: 620px;
+.mag-vogue-desc {
+  font-size: 15px;
+  line-height: 1.72;
+  color: #4a4542;
+  margin-bottom: 34px;
+  max-width: 580px;
 }
 
-.mag-kiosk-fascicles-box {
-  background: rgba(22, 19, 17, 0.75);
-  border: 1px solid rgba(201, 163, 107, 0.35);
-  padding: 24px;
-  margin-bottom: 36px;
-  border-radius: 2px;
+/* Discrete Vogue Contents */
+.mag-vogue-contents {
+  border-top: 1px solid rgba(20, 18, 17, 0.12);
+  border-bottom: 1px solid rgba(20, 18, 17, 0.12);
+  padding: 18px 0;
+  margin-bottom: 38px;
 }
 
-.mag-kiosk-fascicles-label {
+.mag-vogue-contents-label {
   display: block;
-  font-size: 10.5px;
-  letter-spacing: 0.24em;
-  color: #c9a36b;
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  color: #8b8073;
   text-transform: uppercase;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
-.mag-kiosk-fascicles-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.mag-kiosk-fas-item {
+.mag-vogue-contents-tags {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  color: #141211;
+  font-family: var(--font-serif, Didot, serif);
+  letter-spacing: 0.04em;
 }
 
-.mag-kiosk-fas-badge {
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  padding: 2px 6px;
-  background: rgba(201, 163, 107, 0.15);
-  border: 1px solid rgba(201, 163, 107, 0.4);
+.mag-vogue-contents-tags .tag-item {
+  color: #141211;
+}
+
+.mag-vogue-contents-tags .tag-sep {
   color: #c9a36b;
-  border-radius: 2px;
-  flex-shrink: 0;
-  margin-top: 2px;
+  font-weight: 300;
 }
 
-.mag-kiosk-fas-text strong {
-  display: block;
-  font-size: 12.5px;
-  color: #f6f2ec;
-  letter-spacing: 0.05em;
-  margin-bottom: 2px;
-}
-
-.mag-kiosk-fas-text small {
-  display: block;
-  font-size: 11.5px;
-  color: #a39788;
-  line-height: 1.35;
-}
-
-.mag-kiosk-actions {
+/* Actions: Elegant and Refined */
+.mag-vogue-actions {
   display: flex;
   align-items: center;
   gap: 18px;
   flex-wrap: wrap;
 }
 
-.mag-kiosk-cta-primary {
+.mag-vogue-cta-primary {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  background-color: #c9a36b;
-  color: #0d0b0a;
-  padding: 16px 28px;
+  background-color: #141211;
+  color: #f9f6f0;
+  padding: 15px 30px;
   font-family: var(--font-serif, Didot, serif);
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(201, 163, 107, 0.25);
+  box-shadow: 0 4px 14px rgba(20, 18, 17, 0.15);
 }
 
-.mag-kiosk-cta-primary:hover {
-  background-color: #f6f2ec;
-  color: #0d0b0a;
+.mag-vogue-cta-primary:hover {
+  background-color: #8b2635;
+  color: #ffffff;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(201, 163, 107, 0.4);
+  box-shadow: 0 6px 18px rgba(139, 38, 53, 0.3);
 }
 
-.mag-kiosk-cta-arrow {
-  font-size: 15px;
+.mag-vogue-cta-primary .arrow {
+  font-size: 14px;
   transition: transform 0.2s ease;
 }
 
-.mag-kiosk-cta-primary:hover .mag-kiosk-cta-arrow {
+.mag-vogue-cta-primary:hover .arrow {
   transform: translate(3px, -3px);
 }
 
-.mag-kiosk-cta-secondary {
+.mag-vogue-cta-secondary {
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(201, 163, 107, 0.5);
-  color: #ded3c5;
-  padding: 15px 24px;
-  font-size: 11px;
+  border: 1px solid rgba(20, 18, 17, 0.28);
+  color: #141211;
+  padding: 14px 24px;
+  font-size: 10.5px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   text-decoration: none;
   transition: all 0.3s ease;
+  background: transparent;
 }
 
-.mag-kiosk-cta-secondary:hover {
-  border-color: #f6f2ec;
-  color: #f6f2ec;
-  background: rgba(255, 255, 255, 0.05);
+.mag-vogue-cta-secondary:hover {
+  border-color: #141211;
+  background: rgba(20, 18, 17, 0.04);
+  color: #141211;
 }
 
 @media (max-width: 980px) {
-  .mag-kiosk-stage {
+  .mag-vogue-grid {
     grid-template-columns: 1fr;
     gap: 40px;
   }
-  .mag-kiosk-info-col {
+  .mag-vogue-copy-col {
     padding-left: 0;
-  }
-  .mag-kiosk-fascicles-grid {
-    grid-template-columns: 1fr;
   }
 }
 
