@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { GlamoraLogo } from '@/components/GlamoraLogo';
 import { SocialIcon, useGlamoraSocialChannels } from '@/components/SocialIcons';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 export function Footer() {
   const socialChannels = useGlamoraSocialChannels();
@@ -13,16 +14,26 @@ export function Footer() {
 
   async function handleDispatchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim() || submitting) return;
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || submitting) return;
     setSubmitting(true);
     try {
+      // 1. Guardar directo en Supabase
+      const db = supabaseBrowser();
+      await db.from('newsletter_subscribers').insert({ email: cleanEmail });
+    } catch {
+      // ignore
+    }
+
+    try {
+      // 2. Guardar en API config
       await fetch('/api/studio-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'subscribe', email: email.trim() }),
+        body: JSON.stringify({ action: 'subscribe', email: cleanEmail }),
       });
     } catch {
-      // ignore network error and show confirmation
+      // ignore
     } finally {
       setSubmitting(false);
       setSubscribed(true);

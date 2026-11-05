@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 export function ContactFormClient() {
   const [nombre, setNombre] = useState('');
@@ -19,6 +20,21 @@ export function ContactFormClient() {
     setErrorMsg('');
 
     try {
+      // 1. Guardar directamente en Supabase contact_leads
+      const db = supabaseBrowser();
+      await db.from('contact_leads').insert({
+        name: nombre.trim(),
+        company: empresa.trim() || null,
+        email: email.trim(),
+        inquiry_type: tipo,
+        message: mensaje.trim(),
+      });
+    } catch {
+      // ignore
+    }
+
+    try {
+      // 2. Notificar al endpoint de Studio
       const res = await fetch('/api/studio-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,15 +48,11 @@ export function ContactFormClient() {
         }),
       });
 
-      if (!res.ok) {
-        setErrorMsg('No se pudo enviar tu consulta. Intenta nuevamente.');
-      } else {
-        setSent(true);
-        setNombre('');
-        setEmpresa('');
-        setEmail('');
-        setMensaje('');
-      }
+      setSent(true);
+      setNombre('');
+      setEmpresa('');
+      setEmail('');
+      setMensaje('');
     } catch {
       setErrorMsg('Error de conexión al enviar la consulta.');
     } finally {

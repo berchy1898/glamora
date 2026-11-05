@@ -73,60 +73,67 @@ export function AdminStudioSettingsPanel() {
   const [contactMessages, setContactMessages] = useState<ContactMessageItem[]>([]);
   const [totalViews, setTotalViews] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
 
   useEffect(() => {
     let active = true;
     const db = supabaseBrowser();
 
-    // 1. Cargar redes y vistas de la revista
-    fetch('/api/studio-config')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!active || !data) return;
-        if (data.socials) {
-          setSocials((prev) => ({ ...prev, ...data.socials }));
-        }
-        if (data.articleViews && typeof data.articleViews === 'object') {
-          const sum = Object.values(data.articleViews as Record<string, number>).reduce(
-            (acc, val) => acc + (Number(val) || 0),
-            0
-          );
-          setTotalViews(sum);
-        }
-        if (Array.isArray(data.subscribers) && data.subscribers.length > 0) {
-          setSubscribers(data.subscribers);
-        }
-        if (Array.isArray(data.contactMessages) && data.contactMessages.length > 0) {
-          setContactMessages(data.contactMessages);
-        }
-      })
-      .catch(() => {});
+    async function loadAll() {
+      try {
+        // 1. Cargar enlaces de redes guardados en Supabase
+        const { data: socialRow } = await db
+          .from('studio_settings')
+          .select('value')
+          .eq('key', 'social_links')
+          .maybeSingle();
 
-    // 2. Cargar directamente desde Supabase con la sesión del administrador
-    Promise.all([
-      db
-        .from('newsletter_subscribers')
-        .select('email, subscribed_at')
-        .order('subscribed_at', { ascending: false }),
-      db
-        .from('contact_leads')
-        .select('*')
-        .order('created_at', { ascending: false }),
-    ])
-      .then(([subsRes, leadsRes]) => {
-        if (!active) return;
-        if (subsRes.data && Array.isArray(subsRes.data) && subsRes.data.length > 0) {
+        if (active && socialRow?.value && typeof socialRow.value === 'object') {
+          setSocials((prev) => ({ ...prev, ...socialRow.value }));
+        }
+
+        // 2. Cargar vistas y diseños desde api
+        try {
+          const apiRes = await fetch('/api/studio-config');
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (active && apiData?.articleViews) {
+              const sum = Object.values(apiData.articleViews as Record<string, number>).reduce(
+                (acc, val) => acc + (Number(val) || 0),
+                0
+              );
+              setTotalViews(sum);
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        // 3. Cargar suscriptores del newsletter directamente de Supabase
+        const { data: subsData } = await db
+          .from('newsletter_subscribers')
+          .select('*')
+          .order('subscribed_at', { ascending: false });
+
+        if (active && Array.isArray(subsData)) {
           setSubscribers(
-            subsRes.data.map((s: any) => ({
+            subsData.map((s: any) => ({
               email: s.email,
               subscribedAt: s.subscribed_at,
             }))
           );
         }
-        if (leadsRes.data && Array.isArray(leadsRes.data) && leadsRes.data.length > 0) {
+
+        // 4. Cargar mensajes de contacto directamente de Supabase
+        const { data: leadsData } = await db
+          .from('contact_leads')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (active && Array.isArray(leadsData)) {
           setContactMessages(
-            leadsRes.data.map((l: any) => ({
+            leadsData.map((l: any) => ({
               id: l.id,
               nombre: l.name,
               empresa: l.company || '',
@@ -137,8 +144,14 @@ export function AdminStudioSettingsPanel() {
             }))
           );
         }
-      })
-      .catch(() => {});
+      } catch (err) {
+        console.error('Error cargando datos de Studio:', err);
+      } finally {
+        if (active) setLoadingData(false);
+      }
+    }
+
+    loadAll();
 
     return () => {
       active = false;
@@ -150,18 +163,28 @@ export function AdminStudioSettingsPanel() {
     setSaving(true);
     setStatusMsg('');
     try {
-      const res = await fetch('/api/studio-config', {
+      const db = supabaseBrowser();
+      // Guardar directamente en Supabase studio_settings
+      const { error: supaErr } = await db.from('studio_settings').upsert({
+        key: 'social_links',
+        value: socials,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (supaErr) {
+        console.warn('Aviso Supabase:', supaErr.message);
+      }
+
+      // Notificar también al endpoint local
+      await fetch('/api/studio-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update_socials', socials }),
       });
-      if (res.ok) {
-        setStatusMsg('Enlaces de redes oficiales actualizados en toda la revista ✓');
-      } else {
-        setStatusMsg('No se pudieron guardar los enlaces.');
-      }
-    } catch {
-      setStatusMsg('Error de conexión al guardar enlaces.');
+
+      setStatusMsg('Enlaces de redes oficiales guardados y activos en toda la revista ✓');
+    } catch (err: any) {
+      setStatusMsg('Error al guardar: ' + (err?.message || 'Error de conexión'));
     } finally {
       setSaving(false);
     }
@@ -188,12 +211,9 @@ export function AdminStudioSettingsPanel() {
         body: JSON.stringify({ action: 'delete_contact_message', id }),
       });
       setContactMessages((prev) => prev.filter((m) => m.id !== id));
-      setStatusMsg('Mensaje archivado correctamente ✓');
+      setStatusMsg('Mensaje archivado con éxito ✓');
     } catch {
       setStatusMsg('No se pudo archivar el mensaje.');
-    }
-  }
-      // ignore
     }
   }
 
@@ -219,15 +239,12 @@ export function AdminStudioSettingsPanel() {
     if (!window.confirm('¿Confirmas vaciar todos los mensajes de prueba recibidos en /contacto?')) return;
     setStatusMsg('');
     try {
-      const res = await fetch('/api/studio-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'clear_test_inbox' }),
-      });
-      if (res.ok) {
-        setContactMessages([]);
-        setStatusMsg('Bandeja de mensajes de prueba vaciada con éxito ✓');
+      const db = supabaseBrowser();
+      for (const msg of contactMessages) {
+        await db.from('contact_leads').delete().eq('id', msg.id);
       }
+      setContactMessages([]);
+      setStatusMsg('Bandeja de mensajes de prueba vaciada con éxito ✓');
     } catch {
       setStatusMsg('Error al vaciar bandeja.');
     }
@@ -236,64 +253,10 @@ export function AdminStudioSettingsPanel() {
   return (
     <section
       className="admin-panel"
-      style={{ marginBottom: 22 }}
+      style={{ marginBottom: 28 }}
       aria-labelledby="studio-channels-heading"
     >
-      {/* TARJETA DE SANITIZACIÓN PRE-LANZAMIENTO */}
-      <div
-        style={{
-          padding: '16px 20px',
-          border: '1px solid #d9b7bd',
-          background: '#fff9fa',
-          marginBottom: 20,
-          display: 'grid',
-          gap: 10,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <span style={{ fontSize: 9, letterSpacing: '.2em', color: '#711c32', fontWeight: 600 }}>
-              HERRAMIENTA PRE-LANZAMIENTO · MODO ESTRENO LIMPIO
-            </span>
-            <p style={{ margin: '4px 0 0', fontSize: 12.5, color: '#4a3f41' }}>
-              Restablece las métricas de lectura y vacía los correos de prueba recibidos para iniciar con estadísticas reales desde el día 1.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={resetTestMetrics}
-              style={{
-                padding: '9px 15px',
-                border: '1px solid #711c32',
-                background: '#fff',
-                color: '#711c32',
-                fontSize: 8.5,
-                letterSpacing: '.18em',
-                cursor: 'pointer',
-              }}
-            >
-              REINICIAR VISTAS DEMO ({totalViews}) ↺
-            </button>
-            <button
-              type="button"
-              onClick={clearTestInbox}
-              disabled={contactMessages.length === 0}
-              style={{
-                padding: '9px 15px',
-                border: '1px solid #711c32',
-                background: contactMessages.length ? '#711c32' : '#ccc',
-                color: '#fff',
-                fontSize: 8.5,
-                letterSpacing: '.18em',
-                cursor: contactMessages.length ? 'pointer' : 'not-allowed',
-              }}
-            >
-              VACIAR BANDEJA DE PRUEBA ({contactMessages.length}) ✕
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* 1. CABECERA PRINCIPAL Y ACCESOS RÁPIDOS */}
       <div
         style={{
           display: 'flex',
@@ -301,21 +264,19 @@ export function AdminStudioSettingsPanel() {
           alignItems: 'flex-start',
           gap: 16,
           flexWrap: 'wrap',
-          marginBottom: 16,
+          marginBottom: 20,
         }}
       >
         <div>
-          <div className="eyebrow">
-            CANALES OFICIALES · NEWSLETTER · CONSULTAS COMERCIALES · LECTURAS EN VIVO
-          </div>
+          <div className="eyebrow">GLAMORA STUDIO · CONTROL OPERATIVO</div>
           <h2
             id="studio-channels-heading"
-            style={{ font: '27px Georgia', fontWeight: 400, marginTop: 8, marginBottom: 4 }}
+            style={{ font: '27px Georgia', fontWeight: 400, marginTop: 6, marginBottom: 4 }}
           >
-            Redes oficiales, comunidad y bandeja comercial
+            Redes oficiales, comunidad y bandeja de entrada
           </h2>
           <p style={{ margin: 0, color: '#756b68', fontSize: 13 }}>
-            Configura aquí las URLs de tus redes en el Header y Footer, consulta tus suscriptores del Newsletter y revisa los mensajes recibidos desde /contacto.
+            Gestiona los enlaces de redes sociales, consulta los suscriptores al Newsletter y revisa las propuestas recibidas desde /contacto.
           </p>
         </div>
 
@@ -326,7 +287,7 @@ export function AdminStudioSettingsPanel() {
             style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
             <span>✨</span>
-            <span>SOCIAL STUDIO &amp; MARCA DE AGUA ↗</span>
+            <span>SOCIAL STUDIO &amp; MARCA ↗</span>
           </a>
 
           <a
@@ -335,160 +296,181 @@ export function AdminStudioSettingsPanel() {
             style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}
           >
             <span>📖</span>
-            <span>MAQUETAR REVISTA (THE ISSUES) ↗</span>
+            <span>REVISTA DIGITAL (THE ISSUES) ↗</span>
           </a>
         </div>
       </div>
 
-      <form onSubmit={handleSaveSocials}>
+      {statusMsg && (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: 12,
-            marginBottom: 14,
+            padding: '10px 14px',
+            background: '#f2f8f3',
+            border: '1px solid #cce5d2',
+            color: '#1e6833',
+            fontSize: 12.5,
+            marginBottom: 16,
           }}
         >
-          {SOCIAL_FIELDS.map((field) => (
-            <label
-              key={field.id}
-              style={{
-                display: 'grid',
-                gap: 6,
-                padding: '10px 12px',
-                border: '1px solid #e7ded5',
-                background: '#fbfaf7',
-                fontSize: 10,
-                letterSpacing: '.14em',
-                color: '#5a4e48',
-              }}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <SocialIcon platform={field.id} size={13} />
-                {field.label}
-              </span>
-              <input
-                type="url"
-                value={socials[field.id] || ''}
-                onChange={(e) =>
-                  setSocials((prev) => ({ ...prev, [field.id]: e.target.value }))
-                }
-                placeholder={field.placeholder}
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  border: '1px solid #dfd5cb',
-                  background: '#ffffff',
-                  fontSize: 12,
-                  letterSpacing: 'normal',
-                }}
-              />
-            </label>
-          ))}
+          {statusMsg}
         </div>
+      )}
 
+      {/* 2. FORMULARIO DE REDES SOCIALES OFICIALES */}
+      <div style={{ marginBottom: 26, paddingBottom: 22, borderBottom: '1px solid #e7ded5' }}>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>
+          1. ENLACES DE REDES SOCIALES (HEADER &amp; FOOTER)
+        </div>
+        <form onSubmit={handleSaveSocials}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 12,
+              marginBottom: 14,
+            }}
+          >
+            {SOCIAL_FIELDS.map((field) => (
+              <label
+                key={field.id}
+                style={{
+                  display: 'grid',
+                  gap: 6,
+                  padding: '10px 12px',
+                  border: '1px solid #e7ded5',
+                  background: '#fbfaf7',
+                  fontSize: 10,
+                  letterSpacing: '.14em',
+                  color: '#5a4e48',
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <SocialIcon platform={field.id} size={13} />
+                  {field.label}
+                </span>
+                <input
+                  type="url"
+                  value={socials[field.id] || ''}
+                  onChange={(e) =>
+                    setSocials((prev) => ({ ...prev, [field.id]: e.target.value }))
+                  }
+                  placeholder={field.placeholder}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    border: '1px solid #dfd5cb',
+                    background: '#ffffff',
+                    fontSize: 12,
+                    letterSpacing: 'normal',
+                  }}
+                />
+              </label>
+            ))}
+          </div>
+
+          <button type="submit" className="button-primary" disabled={saving}>
+            {saving ? 'GUARDANDO REDES...' : 'GUARDAR REDES OFICIALES ↗'}
+          </button>
+        </form>
+      </div>
+
+      {/* 3. BANDEJA DE ENTRADA · CONSULTAS DE CONTACTO & ALIANZAS */}
+      <div style={{ marginBottom: 26, paddingBottom: 22, borderBottom: '1px solid #e7ded5' }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 14,
+            marginBottom: 12,
+            gap: 12,
             flexWrap: 'wrap',
-            paddingTop: 6,
           }}
         >
-          <button type="submit" className="button-primary" disabled={saving}>
-            {saving ? 'GUARDANDO REDES...' : 'GUARDAR REDES OFICIALES ↗'}
-          </button>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              flexWrap: 'wrap',
-              fontSize: 12,
-              color: '#5c514b',
-            }}
-          >
-            <span>
-              <strong>{totalViews}</strong> lecturas registradas (alimenta <em>En Tendencia</em>)
-            </span>
-            <span>·</span>
-            <span>
-              <strong>{subscribers.length}</strong>{' '}
-              {subscribers.length === 1
-                ? 'suscriptor en Newsletter'
-                : 'suscriptores en Newsletter'}
-            </span>
-            {subscribers.length > 0 && (
-              <button
-                type="button"
-                className="text-link"
-                onClick={copySubscribers}
-              >
-                COPIAR CORREOS ({subscribers.length}) ↗
-              </button>
-            )}
+          <div>
+            <div className="eyebrow">
+              2. BANDEJA DE ENTRADA · CONSULTAS DESDE /CONTACTO ({contactMessages.length})
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#756b68' }}>
+              Mensajes y solicitudes de publicidad enviados por marcas y lectores.
+            </p>
           </div>
+          {contactMessages.length > 0 && (
+            <button
+              type="button"
+              className="text-link"
+              onClick={clearTestInbox}
+              style={{ color: '#711c32' }}
+            >
+              VACIAR MENSAJES DE PRUEBA ✕
+            </button>
+          )}
         </div>
 
-        {statusMsg && (
-          <p className="status" style={{ marginTop: 12 }}>
-            {statusMsg}
-          </p>
-        )}
-      </form>
-
-      {contactMessages.length > 0 && (
-        <div
-          style={{
-            marginTop: 20,
-            paddingTop: 16,
-            borderTop: '1px solid #e7ded5',
-          }}
-        >
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            BANDEJA DE ENTRADA · CONSULTAS RECIBIDAS DESDE /CONTACTO ({contactMessages.length})
+        {loadingData ? (
+          <p style={{ color: '#888', fontSize: 12.5 }}>Cargando consultas de contacto…</p>
+        ) : contactMessages.length === 0 ? (
+          <div
+            style={{
+              padding: '24px 20px',
+              border: '1px dashed #d9cfc6',
+              background: '#fbfaf8',
+              textAlign: 'center',
+              color: '#776e68',
+              fontSize: 13,
+            }}
+          >
+            📭 Todavía no hay consultas en la bandeja. Cuando alguien envíe un mensaje desde /contacto aparecerá aquí de inmediato.
           </div>
-          <div style={{ display: 'grid', gap: 10 }}>
+        ) : (
+          <div style={{ display: 'grid', gap: 12 }}>
             {contactMessages.map((msg) => (
               <div
                 key={msg.id}
                 style={{
-                  padding: '12px 14px',
+                  padding: '14px 16px',
                   border: '1px solid #e7ded5',
-                  background: '#fbf9f5',
+                  background: '#fcfbfa',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'flex-start',
-                  gap: 14,
+                  gap: 16,
                   flexWrap: 'wrap',
                 }}
               >
-                <div style={{ flex: '1 1 320px' }}>
-                  <div style={{ fontSize: 10, letterSpacing: '.14em', color: '#711c32' }}>
+                <div style={{ flex: '1 1 340px' }}>
+                  <div style={{ fontSize: 9.5, letterSpacing: '.16em', color: '#711c32', fontWeight: 600 }}>
                     {msg.tipo.toUpperCase()} ·{' '}
-                    {new Date(msg.createdAt).toLocaleDateString('es-BO')}
+                    {new Date(msg.createdAt).toLocaleDateString('es-BO', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </div>
-                  <strong style={{ display: 'block', fontSize: 15, margin: '4px 0 2px' }}>
-                    {msg.nombre} {msg.empresa ? `(${msg.empresa})` : ''} — {msg.email}
+                  <strong style={{ display: 'block', fontSize: 15, margin: '5px 0 3px', color: '#17151a' }}>
+                    {msg.nombre} {msg.empresa ? `(${msg.empresa})` : ''} —{' '}
+                    <a href={`mailto:${msg.email}`} style={{ color: '#711c32', textDecoration: 'none' }}>
+                      {msg.email}
+                    </a>
                   </strong>
-                  <p style={{ margin: '4px 0 0', fontSize: 13, color: '#4c433e' }}>
+                  <p style={{ margin: '6px 0 0', fontSize: 13.5, color: '#443c37', lineHeight: 1.6 }}>
                     {msg.mensaje}
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 10, alignSelf: 'center' }}>
                   <a
-                    href={`mailto:${msg.email}?subject=GLAMORA · Respuesta a tu consulta`}
-                    className="text-link"
+                    href={`mailto:${msg.email}?subject=GLAMORA · Respuesta a tu consulta de ${encodeURIComponent(msg.tipo)}`}
+                    className="button-primary"
+                    style={{ fontSize: 9, padding: '7px 12px', textDecoration: 'none' }}
                   >
-                    RESPONDER ↗
+                    RESPONDER ✉
                   </a>
                   <button
                     type="button"
                     className="text-link"
                     onClick={() => deleteContactMessage(msg.id)}
+                    style={{ color: '#711c32' }}
                   >
                     ARCHIVAR ✕
                   </button>
@@ -496,8 +478,131 @@ export function AdminStudioSettingsPanel() {
               </div>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* 4. SUSCRIPTORES AL NEWSLETTER */}
+      <div style={{ marginBottom: 26, paddingBottom: 22, borderBottom: '1px solid #e7ded5' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 12,
+            gap: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <div className="eyebrow">
+              3. COMUNIDAD · SUSCRIPTORES AL NEWSLETTER ({subscribers.length})
+            </div>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#756b68' }}>
+              Lectores suscritos desde el pie de página de la revista.
+            </p>
+          </div>
+          {subscribers.length > 0 && (
+            <button
+              type="button"
+              className="button-primary"
+              onClick={copySubscribers}
+              style={{ fontSize: 9, padding: '7px 14px' }}
+            >
+              COPIAR TODOS LOS CORREOS ({subscribers.length}) ↗
+            </button>
+          )}
         </div>
-      )}
+
+        {loadingData ? (
+          <p style={{ color: '#888', fontSize: 12.5 }}>Cargando suscriptores…</p>
+        ) : subscribers.length === 0 ? (
+          <div
+            style={{
+              padding: '24px 20px',
+              border: '1px dashed #d9cfc6',
+              background: '#fbfaf8',
+              textAlign: 'center',
+              color: '#776e68',
+              fontSize: 13,
+            }}
+          >
+            ✉ Aún no hay suscriptores registrados en el Newsletter.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              maxHeight: 220,
+              overflowY: 'auto',
+              padding: '12px 14px',
+              border: '1px solid #e7ded5',
+              background: '#fbfaf7',
+            }}
+          >
+            {subscribers.map((sub, i) => (
+              <span
+                key={`${sub.email}-${i}`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '5px 10px',
+                  background: '#ffffff',
+                  border: '1px solid #dfd5cb',
+                  fontSize: 11.5,
+                  color: '#2a2421',
+                  borderRadius: 2,
+                }}
+              >
+                <strong>{sub.email}</strong>
+                <small style={{ color: '#888', fontSize: 9.5 }}>
+                  {new Date(sub.subscribedAt).toLocaleDateString('es-BO')}
+                </small>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 5. HERRAMIENTA AVANZADA PRE-LANZAMIENTO */}
+      <div
+        style={{
+          padding: '14px 18px',
+          border: '1px solid #e0c8ce',
+          background: '#fffbfc',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 14,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <span style={{ fontSize: 9, letterSpacing: '.18em', color: '#711c32', fontWeight: 600 }}>
+            HERRAMIENTA PRE-LANZAMIENTO · MODO ESTRENO LIMPIO
+          </span>
+          <p style={{ margin: '3px 0 0', fontSize: 12, color: '#544649' }}>
+            Métricas de lectura registradas en el sitio: <strong>{totalViews} lecturas</strong>. Puedes reiniciar a cero antes del debut oficial.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={resetTestMetrics}
+          style={{
+            padding: '8px 14px',
+            border: '1px solid #711c32',
+            background: '#ffffff',
+            color: '#711c32',
+            fontSize: 8.5,
+            letterSpacing: '.18em',
+            cursor: 'pointer',
+          }}
+        >
+          REINICIAR CONTADOR DE VISITAS (0) ↺
+        </button>
+      </div>
     </section>
   );
 }
