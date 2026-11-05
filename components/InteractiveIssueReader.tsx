@@ -15,6 +15,12 @@ import {
   type EditorialBlock,
   type IssuePaginationPlan,
 } from '@/lib/issue-pagination';
+import {
+  computePhotoFilterCss,
+  computeVignetteStyle,
+  computeGrainStyle,
+  type PhotoAdjustments,
+} from '@/lib/photo-adjustments';
 
 export type { IssueArticleItem };
 
@@ -75,6 +81,7 @@ export function InteractiveIssueReader({
       articleFilters: design?.articleFilters || {},
       articleFocalPoints: design?.articleFocalPoints || {},
       articleCoverOverrides: design?.articleCoverOverrides || {},
+      articlePhotoAdjustments: design?.articlePhotoAdjustments || {},
     };
   }, [design]);
 
@@ -466,6 +473,23 @@ export function InteractiveIssueReader({
         'center';
       const filterStyleClass = `photo-filter-${photoFilter}`;
 
+      const photoAdjustments: PhotoAdjustments | undefined =
+        (currentArticle.id ? mergedDesign?.articlePhotoAdjustments?.[currentArticle.id] : undefined) ||
+        (currentArticle.slug ? mergedDesign?.articlePhotoAdjustments?.[currentArticle.slug] : undefined);
+
+      const customFilterCss =
+        photoAdjustments && Object.keys(photoAdjustments).length > 0
+          ? computePhotoFilterCss(photoFilter, photoAdjustments)
+          : undefined;
+
+      const vignetteOverlay = photoAdjustments?.vignette
+        ? computeVignetteStyle(photoAdjustments.vignette)
+        : null;
+
+      const grainOverlay = photoAdjustments?.grain
+        ? computeGrainStyle(photoAdjustments.grain)
+        : null;
+
       const currentLayout: SpreadLayoutStyle =
         (currentArticle.id && mergedDesign.articleLayouts?.[currentArticle.id]) ||
         (currentArticle.slug && mergedDesign.articleLayouts?.[currentArticle.slug]) ||
@@ -499,14 +523,16 @@ export function InteractiveIssueReader({
           if (currentLayout === 'cinema-bleed') {
             return (
               <div className={`mag-page mag-page-cinema-dark ${slotClass}`}>
-                <div className="mag-cinema-frame">
+                <div className="mag-cinema-frame" style={{ position: 'relative' }}>
                   <img
                     src={primaryPhoto}
                     alt={currentArticle.title}
                     draggable={false}
                     className={filterStyleClass}
-                    style={{ objectPosition: focalPoint }}
+                    style={{ objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
                   />
+                  {vignetteOverlay && <div style={vignetteOverlay} />}
+                  {grainOverlay && <div style={grainOverlay} />}
                   <div className="mag-cinema-caption">
                     <span>
                       {[currentArticle.category, currentArticle.city]
@@ -533,14 +559,16 @@ export function InteractiveIssueReader({
                   GLAMORA SIGNATURE · {(currentArticle.city || 'BOLIVIA').toUpperCase()}
                 </span>
                 <div className="mag-vogue-asym-spread-stage">
-                  <div className="mag-asym-hero-box">
+                  <div className="mag-asym-hero-box" style={{ position: 'relative' }}>
                     <img
                       src={primaryPhoto}
                       alt={currentArticle.title}
                       draggable={false}
                       className={filterStyleClass}
-                      style={{ objectPosition: focalPoint }}
+                      style={{ objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
                     />
+                    {vignetteOverlay && <div style={vignetteOverlay} />}
+                    {grainOverlay && <div style={grainOverlay} />}
                     <span className="mag-asym-badge">01 · {(currentArticle.event_name || currentArticle.category || 'LOOK PRINCIPAL').toUpperCase()}</span>
                   </div>
                   <div className="mag-asym-split-bottom">
@@ -577,14 +605,16 @@ export function InteractiveIssueReader({
                   <span className="mag-envogue-subtitle">ATELIER MOODBOARD · {(currentArticle.category || 'LOOK').toUpperCase()}</span>
                 </div>
                 <div className="mag-envogue-collage-stage">
-                  <div className="mag-envogue-center-hero">
+                  <div className="mag-envogue-center-hero" style={{ position: 'relative' }}>
                     <img
                       src={primaryPhoto}
                       alt={currentArticle.title}
                       draggable={false}
                       className={filterStyleClass}
-                      style={{ objectPosition: focalPoint }}
+                      style={{ objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
                     />
+                    {vignetteOverlay && <div style={vignetteOverlay} />}
+                    {grainOverlay && <div style={grainOverlay} />}
                     <span className="mag-envogue-tag">
                       01 · {(currentArticle.event_name || currentArticle.title).toUpperCase().slice(0, 32)}
                     </span>
@@ -620,14 +650,16 @@ export function InteractiveIssueReader({
                   </span>
                 </div>
                 <div className="mag-social-mosaic-grid">
-                  <div className="mag-social-hero-box">
+                  <div className="mag-social-hero-box" style={{ position: 'relative' }}>
                     <img
                       src={primaryPhoto}
                       alt={currentArticle.title}
                       draggable={false}
                       className={filterStyleClass}
-                      style={{ objectPosition: focalPoint }}
+                      style={{ objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
                     />
+                    {vignetteOverlay && <div style={vignetteOverlay} />}
+                    {grainOverlay && <div style={grainOverlay} />}
                     <span className="mag-social-tag">01 · AMBIENTE · {currentArticle.venue || currentArticle.title}</span>
                   </div>
                   <div className="mag-social-duo-row">
@@ -653,14 +685,16 @@ export function InteractiveIssueReader({
           if (currentLayout === 'editorial-quote') {
             return (
               <div className={`mag-page mag-quote-spread-left ${slotClass}`}>
-                <div className="mag-quote-portrait-plate">
+                <div className="mag-quote-portrait-plate" style={{ position: 'relative' }}>
                   <img
                     src={primaryPhoto}
                     alt={currentArticle.title}
                     draggable={false}
                     className={filterStyleClass}
-                    style={{ objectPosition: focalPoint }}
+                    style={{ objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
                   />
+                  {vignetteOverlay && <div style={vignetteOverlay} />}
+                  {grainOverlay && <div style={grainOverlay} />}
                   <div className="mag-quote-plate-badge">
                     <span>ENTREVISTA DE AUTOR · VOZ EDITORIAL</span>
                   </div>
@@ -676,14 +710,16 @@ export function InteractiveIssueReader({
           // 6. Glamora Classic Fashion Plate (Lámina Noble a Página Completa)
           return (
             <div className={`mag-page mag-vogue-classic-left ${slotClass}`}>
-              <div className="mag-classic-fashion-plate">
+              <div className="mag-classic-fashion-plate" style={{ position: 'relative' }}>
                 <img
                   src={primaryPhoto}
                   alt={currentArticle.title}
                   draggable={false}
                   className={filterStyleClass}
-                  style={{ objectPosition: focalPoint }}
+                  style={{ objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
                 />
+                {vignetteOverlay && <div style={vignetteOverlay} />}
+                {grainOverlay && <div style={grainOverlay} />}
                 <div className="mag-plate-corner-tag">
                   <span>{(currentArticle.category || 'ALTA MODA').toUpperCase()}</span>
                   <span>{(currentArticle.city || 'BOLIVIA').toUpperCase()}</span>

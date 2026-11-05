@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { optimizeEditorialImage } from '@/lib/media-optimizer';
 
-export type EditorialAspectPreset = 'vertical' | 'horizontal' | 'original';
+export type EditorialAspectPreset = 'haute-couture' | 'vertical' | 'horizontal' | 'original';
 
 type EditorialImageCropperModalProps = {
   file: File | null;
@@ -14,15 +14,22 @@ type EditorialImageCropperModalProps = {
 };
 
 export const PRESET_CONFIG: Record<
-  'vertical' | 'horizontal',
+  'haute-couture' | 'vertical' | 'horizontal',
   { width: number; height: number; ratioLabel: string; label: string; description: string }
 > = {
+  'haute-couture': {
+    width: 1200,
+    height: 1555,
+    ratioLabel: '213:276',
+    label: 'HAUTE COUTURE (213 × 276 mm)',
+    description: '1200 × 1555 px · Formato oficial internacional de imprenta (Recomendado)',
+  },
   vertical: {
     width: 1200,
     height: 1600,
     ratioLabel: '3:4',
     label: 'PORTADA VERTICAL (3:4)',
-    description: '1200 × 1600 px · Formato oficial de revista (Recomendado)',
+    description: '1200 × 1600 px · Proporción digital estándar',
   },
   horizontal: {
     width: 1600,
@@ -89,9 +96,12 @@ export function EditorialImageCropperModal({
     if (!ctx) return;
 
     let targetW = 1200;
-    let targetH = 1600;
+    let targetH = 1555; // 213 × 276 mm Haute Couture
 
-    if (preset === 'horizontal') {
+    if (preset === 'vertical') {
+      targetW = 1200;
+      targetH = 1600;
+    } else if (preset === 'horizontal') {
       targetW = 1600;
       targetH = 900;
     } else if (preset === 'original') {
@@ -125,7 +135,7 @@ export function EditorialImageCropperModal({
     // Dibujar imagen
     ctx.drawImage(imgObj, drawX, drawY, drawW, drawH);
 
-    // Dibujar guías visuales sutiles de composición (regla de los tercios)
+    // Dibujar guías visuales sutiles de composición (regla de los tercios y zonas de seguridad)
     if (showGuides && preset !== 'original') {
       ctx.save();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
@@ -144,6 +154,19 @@ export function EditorialImageCropperModal({
       ctx.moveTo(0, (targetH * 2) / 3);
       ctx.lineTo(targetW, (targetH * 2) / 3);
       ctx.stroke();
+
+      // Guías de imprenta (Sangrado 3mm y Margen Seguro 12mm) en formatos editoriales
+      if (preset === 'haute-couture' || preset === 'vertical') {
+        const bleedPx = Math.round(targetW * (3 / 213));
+        ctx.strokeStyle = 'rgba(225, 45, 57, 0.55)';
+        ctx.setLineDash([6, 6]);
+        ctx.strokeRect(bleedPx, bleedPx, targetW - bleedPx * 2, targetH - bleedPx * 2);
+
+        const safePx = Math.round(targetW * (12 / 213));
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.65)';
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(safePx, safePx, targetW - safePx * 2, targetH - safePx * 2);
+      }
 
       ctx.restore();
     }
@@ -190,9 +213,12 @@ export function EditorialImageCropperModal({
       }
 
       let targetW = 1200;
-      let targetH = 1600;
+      let targetH = 1555; // 213 × 276 mm Haute Couture
 
-      if (preset === 'horizontal') {
+      if (preset === 'vertical') {
+        targetW = 1200;
+        targetH = 1600;
+      } else if (preset === 'horizontal') {
         targetW = 1600;
         targetH = 900;
       } else if (preset === 'original') {
@@ -424,6 +450,48 @@ export function EditorialImageCropperModal({
               </label>
 
               <div style={{ display: 'grid', gap: 8 }}>
+                {/* BOTÓN HAUTE COUTURE (213 × 276 mm) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreset('haute-couture');
+                    setPanX(0);
+                    setPanY(0);
+                  }}
+                  style={{
+                    padding: '12px 14px',
+                    border:
+                      preset === 'haute-couture'
+                        ? '1.5px solid #711c32'
+                        : '1px solid #dfd5cb',
+                    background: preset === 'haute-couture' ? '#faf3f4' : '#ffffff',
+                    color: preset === 'haute-couture' ? '#711c32' : '#211b1d',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    borderRadius: 2,
+                    transition: 'all .15s ease',
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>★</span>
+                  <div>
+                    <strong
+                      style={{
+                        display: 'block',
+                        fontSize: 11,
+                        letterSpacing: '.12em',
+                      }}
+                    >
+                      HAUTE COUTURE (213 × 276 mm)
+                    </strong>
+                    <small style={{ fontSize: 9.5, opacity: 0.85 }}>
+                      1200 × 1555 px · Formato oficial internacional de imprenta (Recomendado)
+                    </small>
+                  </div>
+                </button>
+
                 {/* BOTÓN VERTICAL 3:4 */}
                 <button
                   type="button"

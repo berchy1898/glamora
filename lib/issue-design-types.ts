@@ -1,3 +1,5 @@
+import type { PhotoAdjustments } from './photo-adjustments';
+
 export type SpreadLayoutStyle =
   | 'vogue-classic'
   | 'vogue-asymmetric'
@@ -10,7 +12,9 @@ export type PhotoEditorialFilter =
   | 'natural'
   | 'warm-gold'
   | 'black-and-white'
-  | 'cinema-contrast';
+  | 'cinema-contrast'
+  | 'vintage-35mm'
+  | 'nordic-cool';
 
 export type PhotoFocalPoint = 'center' | 'top' | 'bottom';
 
@@ -34,6 +38,7 @@ export type IssueDesignConfig = {
   articleFilters?: Record<string, PhotoEditorialFilter>;
   articleFocalPoints?: Record<string, PhotoFocalPoint>;
   articleCoverOverrides?: Record<string, string>;
+  articlePhotoAdjustments?: Record<string, PhotoAdjustments>;
 };
 
 export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {
@@ -51,4 +56,5 @@ export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {
   articleFilters: {},
   articleFocalPoints: {},
   articleCoverOverrides: {},
+  articlePhotoAdjustments: {},
 };

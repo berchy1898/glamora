@@ -5104,6 +5104,14 @@ body {
   filter: contrast(1.22) saturate(1.18) !important;
 }
 
+.photo-filter-vintage-35mm {
+  filter: brightness(1.06) contrast(0.96) saturate(0.94) sepia(0.12) !important;
+}
+
+.photo-filter-nordic-cool {
+  filter: brightness(1.03) contrast(1.14) saturate(0.76) hue-rotate(12deg) !important;
+}
+
 /* 1. Glamora Classic Fashion Plate (Foto a página completa) */
 .mag-vogue-classic-left {
   position: relative;

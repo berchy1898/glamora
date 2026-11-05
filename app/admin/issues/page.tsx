@@ -19,6 +19,8 @@ import {
 } from '@/lib/issue-design-types';
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
 import { EditorialImageCropperModal } from '@/components/EditorialImageCropperModal';
+import { EditorialDarkroomModal } from '@/components/EditorialDarkroomModal';
+import { type PhotoAdjustments } from '@/lib/photo-adjustments';
 import { buildIssuePaginationPlan } from '@/lib/issue-pagination';
 
 const MAX_FILE_SIZE = MAX_RAW_IMAGE_BYTES;
@@ -81,9 +83,11 @@ const LAYOUT_OPTIONS: { value: SpreadLayoutStyle; label: string; badge: string; 
 
 const PHOTO_FILTERS: { value: PhotoEditorialFilter; label: string }[] = [
   { value: 'natural', label: 'Color Natural HD (Original)' },
-  { value: 'warm-gold', label: 'Vogue Warm Gold (Cálido Estucado)' },
-  { value: 'black-and-white', label: 'Black & White Alta Costura' },
-  { value: 'cinema-contrast', label: 'Cinema Contrast (Dramático)' },
+  { value: 'warm-gold', label: 'Champagne Glow (Oro Cálido)' },
+  { value: 'black-and-white', label: 'Didone Noir (B&W de Autor)' },
+  { value: 'cinema-contrast', label: 'Vogue Paris Drama (Alto Contraste)' },
+  { value: 'vintage-35mm', label: 'Portra 400 (Grano 35mm Analógico)' },
+  { value: 'nordic-cool', label: 'Nordic Mineral (Frío Glacial)' },
 ];
 
 const FOCAL_POINTS: { value: PhotoFocalPoint; label: string }[] = [
@@ -117,6 +121,11 @@ export default function IssueBuilder() {
   // Configuración avanzada de maquetación (GLAMORA ISSUE DESIGN STUDIO)
   const [allDesigns, setAllDesigns] = useState<Record<string, IssueDesignConfig>>({});
   const [design, setDesign] = useState<IssueDesignConfig>(DEFAULT_ISSUE_DESIGN);
+  const [darkroomTarget, setDarkroomTarget] = useState<{
+    articleId: string;
+    articleTitle: string;
+    photoUrl: string;
+  } | null>(null);
 
   const paginationPlan = useMemo(() => {
     const chosenArticles = chosen
@@ -292,6 +301,27 @@ export default function IssueBuilder() {
     }));
   }
 
+  function setArticlePhotoAdjustments(
+    articleId: string,
+    filter: PhotoEditorialFilter,
+    adjustments: PhotoAdjustments
+  ) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => ({
+      ...prev,
+      articleFilters: {
+        ...(prev.articleFilters || {}),
+        [articleId]: filter,
+        ...(art?.slug ? { [art.slug]: filter } : {}),
+      },
+      articlePhotoAdjustments: {
+        ...(prev.articlePhotoAdjustments || {}),
+        [articleId]: adjustments,
+        ...(art?.slug ? { [art.slug]: adjustments } : {}),
+      },
+    }));
+  }
+
   function removeSelectedCover() {
     setCoverFile(null);
     if (fileInputRef.current) {
@@ -338,6 +368,7 @@ export default function IssueBuilder() {
       articleFilters: savedDesign.articleFilters || {},
       articleFocalPoints: savedDesign.articleFocalPoints || {},
       articleCoverOverrides: savedDesign.articleCoverOverrides || {},
+      articlePhotoAdjustments: savedDesign.articlePhotoAdjustments || {},
     });
 
     setMessage('Editando maquetación de: ' + issue.title);
@@ -1189,6 +1220,56 @@ export default function IssueBuilder() {
                               </label>
                             </div>
 
+                            {/* Control 4: Laboratorio Darkroom Editorial */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, justifyContent: 'center' }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#3d342f', letterSpacing: 0.5 }}>
+                                DARKROOM FOTOGRÁFICO
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDarkroomTarget({
+                                    articleId,
+                                    articleTitle: art.title,
+                                    photoUrl: selectedPhotoUrl,
+                                  })
+                                }
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 6,
+                                  padding: '8px 12px',
+                                  background: '#191520',
+                                  color: '#dfba73',
+                                  border: '1px solid rgba(212, 175, 55, 0.4)',
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  letterSpacing: '0.12em',
+                                  cursor: 'pointer',
+                                  borderRadius: 2,
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <span>🎨</span> ABRIR DARKROOM STUDIO
+                                {design.articlePhotoAdjustments?.[articleId] &&
+                                  Object.keys(design.articlePhotoAdjustments[articleId]).length > 0 && (
+                                    <span
+                                      style={{
+                                        fontSize: 8.5,
+                                        background: '#711c32',
+                                        color: '#fff',
+                                        padding: '1px 5px',
+                                        borderRadius: 2,
+                                        marginLeft: 4,
+                                      }}
+                                    >
+                                      AJUSTADO
+                                    </span>
+                                  )}
+                              </button>
+                            </div>
+
                             {/* Micro-Preview de Laboratorio Visual */}
                             <div
                               style={{
@@ -1428,6 +1509,20 @@ export default function IssueBuilder() {
               />
             </div>
           </div>
+        )}
+
+        {darkroomTarget && (
+          <EditorialDarkroomModal
+            isOpen={true}
+            photoUrl={darkroomTarget.photoUrl}
+            articleTitle={darkroomTarget.articleTitle}
+            initialFilter={design.articleFilters?.[darkroomTarget.articleId] || 'natural'}
+            initialAdjustments={design.articlePhotoAdjustments?.[darkroomTarget.articleId] || {}}
+            onSave={(filter, adjustments) => {
+              setArticlePhotoAdjustments(darkroomTarget.articleId, filter, adjustments);
+            }}
+            onClose={() => setDarkroomTarget(null)}
+          />
         )}
       </div>
     </main>
