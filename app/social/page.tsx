@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getArticles, type Article } from '@/lib/data';
 import { ArticleCard } from '@/components/ArticleCard';
 import { EditorialGallery } from '@/components/EditorialGallery';
+import { SocietyGuestDirectory } from '@/components/SocietyGuestDirectory';
 
 export const metadata = { title: 'Glamora Social | Eventos y galerías' };
 
@@ -216,6 +217,9 @@ export default async function Social() {
           <p>Aún no hay coberturas publicadas en SOCIALES.</p>
         </div>
       )}
+
+      {/* Opción D: Who's Who & Society Guest Directory */}
+      {articles.length > 0 && <SocietyGuestDirectory articles={articles} />}
 
       {stories.length > 0 && (
         <section className="people-recent" aria-labelledby="social-recent-title">

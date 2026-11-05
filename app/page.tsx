@@ -7,6 +7,8 @@ import { HeroCoverImage } from '@/components/HeroCoverImage';
 import { SocialAdaptiveTile } from '@/components/SocialAdaptiveTile';
 import { SponsorSlot } from '@/components/SponsorSlot';
 import { readStudioConfig } from '@/lib/studio-config';
+import { getLatestPublishedIssue } from '@/lib/issues-data';
+import { HomeIssueKiosk } from '@/components/HomeIssueKiosk';
 
 type SocialTileItem = {
   key: string;
@@ -105,10 +107,11 @@ function formatEditorialDate(value: string | null | undefined) {
 }
 
 export default async function Home() {
-  const [coverResult, articlesResult, socialResult] = await Promise.allSettled([
+  const [coverResult, articlesResult, socialResult, issueResult] = await Promise.allSettled([
     getCoverArticle(),
     getArticles({ limit: 7, demoFallback: false }),
     getArticles({ social: true, limit: 3, demoFallback: false }),
+    getLatestPublishedIssue(),
   ]);
 
   const hero = coverResult.status === 'fulfilled' ? coverResult.value.article : null;
@@ -118,6 +121,7 @@ export default async function Home() {
   const articles = articlesResult.status === 'fulfilled' ? articlesResult.value : [];
   const socialArticles = socialResult.status === 'fulfilled' ? socialResult.value : [];
   const articlesUnavailable = articlesResult.status === 'rejected';
+  const latestIssue = issueResult.status === 'fulfilled' ? issueResult.value : null;
 
   if (articlesUnavailable) {
     console.error('[GLAMORA] No se pudieron cargar las historias recientes.');
@@ -237,6 +241,9 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      {/* Haute Couture Kiosk - The Issues Showcase */}
+      {latestIssue && <HomeIssueKiosk issue={latestIssue} />}
 
       <section className="container latest-section">
         <div className="section-heading">
