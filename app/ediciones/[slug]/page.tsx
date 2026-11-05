@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabase';
 import { ArticleCard } from '@/components/ArticleCard';
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
+import { IssueReaderHost } from '@/components/IssueReaderHost';
 import { DEFAULT_ISSUE_DESIGN, readStudioConfig } from '@/lib/studio-config';
 import { buildIssuePaginationPlan } from '@/lib/issue-pagination';
 
@@ -146,7 +147,7 @@ export default async function Issue({
           <p>Toca la portada o el sumario para hojear la edición digital completa página por página.</p>
         </header>
 
-        <InteractiveIssueReader
+        <IssueReaderHost
           issueNumber={issue.issue_number}
           issueTitle={issue.title}
           coverImage={issue.cover_image}
@@ -154,6 +155,7 @@ export default async function Issue({
           articles={articles}
           sponsors={sponsorRows || []}
           design={issueDesign}
+          pdfUrl={issueDesign.pdfUrl}
         />
 
         {articles.length > 0 && (

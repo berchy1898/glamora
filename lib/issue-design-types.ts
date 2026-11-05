@@ -78,6 +78,10 @@ export type IssueDesignConfig = {
   articleWishlistItems?: Record<string, FashionWishlistItem[]>;
   articleSponsorTags?: Record<string, ArticleSponsorTag>;
   mastheadStaff?: MastheadStaffConfig;
+  // Soporte Oficial Flipbook 3D Ultra-HD & PDF
+  pdfUrl?: string;
+  pdfPages?: string[];
+  readerEngine?: '3d-flipbook' | 'article-reader';
 };
 
 export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {

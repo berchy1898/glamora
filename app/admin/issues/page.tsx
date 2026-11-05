@@ -1022,6 +1022,26 @@ export default function IssueBuilder() {
               </div>
             </div>
 
+            {/* 2B. PUBLICACIÓN FLIPBOOK 3D & ARCHIVO PDF */}
+            <div className="wide" style={{ borderBottom: '1px solid #e7ded5', paddingBottom: 10, marginTop: 18 }}>
+              <div className="eyebrow">PASO 2B · PUBLICACIÓN FLIPBOOK 3D ULTRA-HD (PDF OFICIAL DE LA EDICIÓN)</div>
+            </div>
+
+            <label className="wide">
+              URL DEL ARCHIVO PDF DE LA EDICIÓN (DIAGRAMADA EN PC / CANVA / INDESIGN)
+              <input
+                type="text"
+                value={design.pdfUrl || ''}
+                onChange={(e) =>
+                  setDesign((prev) => ({ ...prev, pdfUrl: e.target.value.trim() }))
+                }
+                placeholder="https://... o ruta al archivo edicion-01.pdf"
+              />
+              <small style={{ color: '#888', marginTop: 4, display: 'block' }}>
+                Al ingresar el PDF oficial, la plataforma activará el Lector Flipbook 3D de alta gama con doble pliego, acústica de papel y lupa macro.
+              </small>
+            </label>
+
             {/* 3. CARTA EDITORIAL DEL DIRECTOR */}
             <div className="wide" style={{ borderBottom: '1px solid #e7ded5', paddingBottom: 10, marginTop: 18 }}>
               <div className="eyebrow">PASO 3 · CARTA EDITORIAL DEL DIRECTOR (PÁGINA 01)</div>
