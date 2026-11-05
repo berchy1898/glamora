@@ -25,7 +25,7 @@ export default async function OpenGraphImage({
       issueTitle = issue.title || 'The Digital Issue';
     }
   } catch {
-    // fallback defaults
+    // defaults
   }
 
   return new ImageResponse(
@@ -46,7 +46,7 @@ export default async function OpenGraphImage({
           border: '14px solid #161311',
         }}
       >
-        {/* Inner Gold Inset Frame */}
+        {/* Inner Gold Frame */}
         <div
           style={{
             position: 'absolute',
@@ -56,6 +56,7 @@ export default async function OpenGraphImage({
             bottom: 14,
             border: '1px solid rgba(201, 163, 107, 0.4)',
             pointerEvents: 'none',
+            display: 'flex',
           }}
         />
 
@@ -72,6 +73,7 @@ export default async function OpenGraphImage({
         >
           <div
             style={{
+              display: 'flex',
               fontSize: '44px',
               letterSpacing: '0.22em',
               fontWeight: 700,
@@ -92,7 +94,7 @@ export default async function OpenGraphImage({
             }}
           >
             <span>THE DIGITAL ISSUE</span>
-            <span>✦</span>
+            <span>·</span>
             <span>BOLIVIA</span>
           </div>
         </div>
@@ -106,7 +108,7 @@ export default async function OpenGraphImage({
             gap: '46px',
           }}
         >
-          {/* Cover Didone Plate Representation */}
+          {/* Cover Plate */}
           <div
             style={{
               width: '300px',
@@ -125,13 +127,14 @@ export default async function OpenGraphImage({
           >
             <div
               style={{
+                display: 'flex',
                 fontSize: '11px',
                 letterSpacing: '0.24em',
                 color: '#c9a36b',
                 textTransform: 'uppercase',
               }}
             >
-              EDICIÓN DIGITAL
+              EDICION DIGITAL
             </div>
 
             <div
@@ -144,6 +147,7 @@ export default async function OpenGraphImage({
             >
               <div
                 style={{
+                  display: 'flex',
                   fontSize: '34px',
                   letterSpacing: '0.18em',
                   color: '#f6f2ec',
@@ -154,6 +158,7 @@ export default async function OpenGraphImage({
               </div>
               <div
                 style={{
+                  display: 'flex',
                   width: '40px',
                   height: '1px',
                   backgroundColor: '#c9a36b',
@@ -162,17 +167,19 @@ export default async function OpenGraphImage({
               />
               <div
                 style={{
+                  display: 'flex',
                   fontSize: '14px',
                   letterSpacing: '0.2em',
                   color: '#c9a36b',
                 }}
               >
-                Nº {issueNum}
+                NO. {issueNum}
               </div>
             </div>
 
             <div
               style={{
+                display: 'flex',
                 backgroundColor: 'rgba(201, 163, 107, 0.12)',
                 border: '1px solid #c9a36b',
                 color: '#c9a36b',
@@ -197,7 +204,7 @@ export default async function OpenGraphImage({
           >
             <div
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 color: '#c9a36b',
                 fontSize: '13px',
                 letterSpacing: '0.24em',
@@ -205,11 +212,12 @@ export default async function OpenGraphImage({
                 marginBottom: '16px',
               }}
             >
-              EDICIÓN Nº {issueNum} · VOLUMEN {new Date().getFullYear()}
+              EDICION NO. {issueNum} · VOLUMEN 2026
             </div>
 
             <div
               style={{
+                display: 'flex',
                 fontSize: '44px',
                 lineHeight: 1.15,
                 fontWeight: 700,
@@ -230,10 +238,11 @@ export default async function OpenGraphImage({
                 marginTop: '8px',
               }}
             >
-              {['MODA & ATELIER', 'SOCIEDAD & GALAS', 'DIÁLOGOS', 'GOURMET'].map((tag) => (
+              {['MODA & ATELIER', 'SOCIEDAD & GALAS', 'DIALOGOS', 'GOURMET'].map((tag) => (
                 <div
                   key={tag}
                   style={{
+                    display: 'flex',
                     backgroundColor: 'rgba(201, 163, 107, 0.12)',
                     border: '1px solid rgba(201, 163, 107, 0.4)',
                     color: '#ded3c5',
@@ -264,7 +273,7 @@ export default async function OpenGraphImage({
             color: '#a39788',
           }}
         >
-          <span>LECTOR DIGITAL DE DOBLE PÁGINA · ALTA COSTURA DIDONE</span>
+          <span>LECTOR DIGITAL DE DOBLE PAGINA · ALTA COSTURA DIDONE</span>
           <span style={{ color: '#c9a36b' }}>GLAMORA-TWO.VERCEL.APP</span>
         </div>
       </div>
