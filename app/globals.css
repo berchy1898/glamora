@@ -6364,11 +6364,25 @@ body {
 
 .side-issue-card {
   background: #fbf9f5;
-  border: 1px solid rgba(20, 18, 17, 0.12);
-  border-top: 3px solid #141211;
+  border: 1px solid rgba(20, 18, 17, 0.09);
   padding: 26px 22px;
   text-align: center;
-  box-shadow: 0 4px 16px rgba(20, 18, 17, 0.04);
+  box-shadow: 0 4px 18px rgba(20, 18, 17, 0.04);
+}
+
+.side-issue-logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.side-issue-uhd-logo {
+  width: auto;
+  max-width: 220px;
+  height: auto;
+  max-height: 48px;
+  object-fit: contain;
 }
 
 .side-issue-brand {

@@ -16,19 +16,25 @@ export function HomeIssueSidebar({ issue }: HomeIssueSidebarProps) {
   return (
     <aside className="side-issue-announcement" aria-label="GLAMORA The Issue">
       <div className="side-issue-card">
-        {/* Logo lockup: GLAMORA The Issue */}
-        <div className="side-issue-brand">
-          <span className="brand-name">GLAMORA</span>
-          <span className="brand-issue">The Issue</span>
+        {/* Logo oficial remasterizado UHD: GLAMORA / The Issue */}
+        <div className="side-issue-logo-wrap">
+          <Image
+            src="/brand/glamora-the-issue-uhd.png"
+            alt="GLAMORA The Issue"
+            width={240}
+            height={60}
+            className="side-issue-uhd-logo"
+            priority
+          />
         </div>
 
         <span className="side-issue-tag">NUESTRA PRIMERA EDICIÓN</span>
 
-        {/* Portada compacta y limpia, sin stickers ni reflejos */}
+        {/* Portada compacta y limpia */}
         <Link
           href={`/ediciones/${issue.slug}`}
           className="side-issue-cover-link"
-          title={`Hojear GLAMORA The Issue Nº ${issueNum}`}
+          title={`Ver GLAMORA The Issue Nº ${issueNum}`}
         >
           <div className="side-issue-cover-frame">
             {issue.cover_image ? (
@@ -64,11 +70,11 @@ export function HomeIssueSidebar({ issue }: HomeIssueSidebarProps) {
           </h3>
 
           <p className="side-issue-copy">
-            Nuestra primera edición impresa y digital ya está disponible para hojear.
+            Ya disponible.
           </p>
 
           <Link href={`/ediciones/${issue.slug}`} className="side-issue-cta">
-            HOJEAR EDICIÓN <span>↗</span>
+            VER EDICIÓN <span>↗</span>
           </Link>
         </div>
       </div>
