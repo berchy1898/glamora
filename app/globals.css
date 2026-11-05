@@ -3734,8 +3734,8 @@ body {
   display: block;
   margin-bottom: 10px;
   color: #8f725f;
-  font-size: 8.5px;
-  letter-spacing: .24em;
+  font-size: 10px;
+  letter-spacing: .22em;
 }
 
 .mag-page-cover-intro h2 {
@@ -3747,7 +3747,7 @@ body {
   max-width: 42ch;
   margin: 0 0 20px;
   color: #635a54;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.65;
 }
 
@@ -3756,8 +3756,8 @@ body {
   gap: 10px;
   margin-bottom: 26px;
   color: #7c6f67;
-  font-size: 8.5px;
-  letter-spacing: .2em;
+  font-size: 10px;
+  letter-spacing: .18em;
 }
 
 .mag-open-first-btn {
@@ -3845,30 +3845,31 @@ body {
 
 .mag-toc-num {
   color: #9b7c68;
-  font-size: 8.5px;
-  letter-spacing: .18em;
+  font-size: 10.5px;
+  letter-spacing: .16em;
+  font-weight: 600;
 }
 
 .mag-toc-info {
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
 .mag-toc-info small {
   color: var(--muted);
-  font-size: 7.5px;
-  letter-spacing: .18em;
+  font-size: 9.5px;
+  letter-spacing: .16em;
 }
 
 .mag-toc-info strong {
   color: var(--ink);
-  font: 400 19px/1.15 var(--font-editorial);
+  font: 400 20px/1.15 var(--font-editorial);
 }
 
 .mag-toc-go {
   color: var(--ink);
-  font-size: 8px;
-  letter-spacing: .18em;
+  font-size: 9.5px;
+  letter-spacing: .16em;
 }
 
 .mag-ad-spread {
@@ -3929,7 +3930,7 @@ body {
 
 .mag-editorial-letter p {
   color: #5e544e;
-  font-size: 14px;
+  font-size: 15.5px;
   line-height: 1.75;
 }
 
@@ -3941,14 +3942,14 @@ body {
 
 .mag-signature strong {
   display: block;
-  font-size: 9px;
-  letter-spacing: .22em;
+  font-size: 11px;
+  letter-spacing: .2em;
 }
 
 .mag-signature span {
   color: var(--muted);
-  font-size: 8px;
-  letter-spacing: .18em;
+  font-size: 9.5px;
+  letter-spacing: .16em;
 }
 
 .mag-page-visual {
@@ -3997,8 +3998,8 @@ body {
 .mag-story-byline {
   margin-bottom: 14px;
   color: #7c6d64;
-  font-size: 8.5px;
-  letter-spacing: .2em;
+  font-size: 10.5px;
+  letter-spacing: .18em;
 }
 
 .mag-story-deck {
@@ -4006,14 +4007,14 @@ body {
   padding-bottom: 14px;
   border-bottom: 1px solid var(--line);
   color: #4a413c;
-  font: italic 17px/1.45 var(--font-editorial);
+  font: italic 18px/1.45 var(--font-editorial);
 }
 
 .mag-story-columns p {
   margin: 0 0 12px;
   color: #362f2b;
-  font-size: 13px;
-  line-height: 1.68;
+  font-size: 14.5px;
+  line-height: 1.62;
 }
 
 .mag-story-people {
@@ -4021,7 +4022,7 @@ body {
   padding: 10px 12px;
   background: #f3ede5;
   color: #5a4e48;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
 }
 
@@ -4035,8 +4036,8 @@ body {
   border: 1px solid var(--ink);
   background: var(--ink);
   color: #fbf8f4;
-  font-size: 8.5px;
-  letter-spacing: .2em;
+  font-size: 10px;
+  letter-spacing: .18em;
 }
 
 .mag-page-folio {
@@ -4046,8 +4047,8 @@ body {
   padding-top: 12px;
   border-top: 1px solid rgba(31, 26, 23, .1);
   color: #8c7f76;
-  font-size: 7.5px;
-  letter-spacing: .22em;
+  font-size: 9.5px;
+  letter-spacing: .18em;
 }
 
 .mag-backcover {
@@ -5565,8 +5566,8 @@ body {
    ========================================================================== */
 .mag-story-subheading {
   margin: 14px 0 6px;
-  font: 700 12px/1.2 var(--font-editorial, 'Didot', Georgia, serif);
-  letter-spacing: .12em;
+  font: 700 13.5px/1.25 var(--font-editorial, 'Didot', Georgia, serif);
+  letter-spacing: .1em;
   text-transform: uppercase;
   color: #711c32;
   border-bottom: 1px solid rgba(113, 28, 50, .15);
@@ -5575,10 +5576,10 @@ body {
 
 .mag-story-quote-callout {
   margin: 12px 0;
-  padding: 9px 12px;
+  padding: 10px 14px;
   background: rgba(245, 239, 232, .75);
   border-left: 3px solid #711c32;
-  font: italic 13px/1.45 var(--font-editorial, 'Didot', Georgia, serif);
+  font: italic 14.5px/1.5 var(--font-editorial, 'Didot', Georgia, serif);
   color: #3b302a;
 }
 
@@ -5592,7 +5593,7 @@ body {
   background: none;
   border: none;
   color: #711c32;
-  font: 700 9.5px/1 system-ui, -apple-system, sans-serif;
+  font: 700 10.5px/1 system-ui, -apple-system, sans-serif;
   letter-spacing: .15em;
   text-transform: uppercase;
   cursor: pointer;
@@ -5614,7 +5615,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: .15em;
   text-transform: uppercase;
   color: #8f725f;
@@ -5622,7 +5623,7 @@ body {
 
 .mag-continuation-kicker {
   display: block;
-  font-size: 8.5px;
+  font-size: 10px;
   letter-spacing: .2em;
   text-transform: uppercase;
   color: #711c32;
@@ -5631,7 +5632,7 @@ body {
 
 .mag-continuation-headline {
   margin: 0 0 12px;
-  font: 400 clamp(18px, 2vw, 24px)/1.15 var(--font-editorial, 'Didot', Georgia, serif);
+  font: 400 clamp(20px, 2.2vw, 26px)/1.15 var(--font-editorial, 'Didot', Georgia, serif);
   color: var(--ink);
 }
 
@@ -6006,8 +6007,8 @@ body {
 
 .mag-masthead-col h5 {
   font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 8px;
-  letter-spacing: 0.22em;
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #711c32;
   margin: 0 0 3px 0;
@@ -6016,8 +6017,8 @@ body {
 
 .mag-masthead-col p {
   font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 12.5px;
+  line-height: 1.4;
   color: #2b2326;
   margin: 0;
 }
@@ -6026,8 +6027,8 @@ body {
   margin-top: 12px;
   padding-top: 10px;
   border-top: 1px solid rgba(26, 21, 27, 0.12);
-  font-size: 9px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.5;
   color: #63534e;
   font-style: italic;
 }
@@ -6051,7 +6052,7 @@ body {
 
 .mag-masthead-sponsor-info small {
   display: block;
-  font-size: 7.5px;
+  font-size: 8.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: #8f725f;
@@ -6060,7 +6061,7 @@ body {
 
 .mag-masthead-sponsor-info strong {
   font-family: 'Didot', 'Playfair Display', Georgia, serif;
-  font-size: 12px;
+  font-size: 13.5px;
   color: #18141c;
 }
 
@@ -6187,10 +6188,10 @@ body {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 9px;
-  line-height: 1.35;
+  font-size: 10.5px;
+  line-height: 1.4;
   border-bottom: 1px dashed rgba(225, 215, 205, 0.7);
-  padding-bottom: 3px;
+  padding-bottom: 4px;
 }
 
 .mag-wishlist-credit-row:last-child {
@@ -6202,14 +6203,14 @@ body {
   font-family: 'Didot', 'Playfair Display', serif;
   font-weight: 700;
   color: #711c32;
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .mag-credit-brand {
   font-weight: 700;
   letter-spacing: 0.1em;
   color: #18141c;
-  font-size: 9px;
+  font-size: 10.5px;
 }
 
 .mag-credit-name {
@@ -6220,23 +6221,23 @@ body {
 
 .mag-credit-price {
   font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 8.5px;
+  font-size: 10px;
   color: #711c32;
   font-weight: 600;
   background: #f7efe6;
-  padding: 1px 5px;
+  padding: 1px 6px;
   border-radius: 2px;
 }
 
 /* 3. Etiqueta de Patrocinio Discreta en Folio */
 .mag-sponsor-folio-pill {
-  font-size: 8px;
-  letter-spacing: 0.16em;
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: #711c32;
   font-weight: 600;
   background: rgba(113, 28, 50, 0.07);
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 2px;
   border: 1px solid rgba(113, 28, 50, 0.2);
 }
@@ -6246,11 +6247,11 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 8px;
-  letter-spacing: 0.16em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: 2px;
   background: #18141c;
   color: #dfba73;

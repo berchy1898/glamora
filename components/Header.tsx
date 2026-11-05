@@ -16,6 +16,7 @@ const cities = [
 ];
 
 const links = [
+  ['THE ISSUES', '/ediciones'],
   ['MODA', '/categoria/moda'],
   ['BELLEZA', '/categoria/belleza'],
   ['PEOPLE', '/categoria/people'],
@@ -183,14 +184,6 @@ export function Header() {
             </Link>
           ))}
           <Link
-            href="/ediciones"
-            aria-current={
-              isCurrentPath(pathname, '/ediciones') ? 'page' : undefined
-            }
-          >
-            THE ISSUES
-          </Link>
-          <Link
             href="/publicidad"
             aria-current={
               isCurrentPath(pathname, '/publicidad') ? 'page' : undefined
@@ -243,9 +236,6 @@ export function Header() {
                   {name}
                 </Link>
               ))}
-              <Link href="/ediciones" onClick={() => setMobileMenuOpen(false)}>
-                THE ISSUES
-              </Link>
               <Link href="/publicidad" onClick={() => setMobileMenuOpen(false)}>
                 PUBLICIDAD
               </Link>
