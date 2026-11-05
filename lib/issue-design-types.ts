@@ -6,6 +6,14 @@ export type SpreadLayoutStyle =
   | 'social-mosaic'
   | 'editorial-quote';
 
+export type PhotoEditorialFilter =
+  | 'natural'
+  | 'warm-gold'
+  | 'black-and-white'
+  | 'cinema-contrast';
+
+export type PhotoFocalPoint = 'center' | 'top' | 'bottom';
+
 export type CoverMastheadPalette =
   | 'champagne'
   | 'ivory'
@@ -23,6 +31,9 @@ export type IssueDesignConfig = {
   editorSignature: string;
   sponsorPosition: 'after-toc' | 'mid-issue' | 'back-inside';
   articleLayouts: Record<string, SpreadLayoutStyle>;
+  articleFilters?: Record<string, PhotoEditorialFilter>;
+  articleFocalPoints?: Record<string, PhotoFocalPoint>;
+  articleCoverOverrides?: Record<string, string>;
 };
 
 export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {
@@ -37,4 +48,7 @@ export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {
   editorSignature: 'DIRECCIÓN EDITORIAL · GLAMORA',
   sponsorPosition: 'after-toc',
   articleLayouts: {},
+  articleFilters: {},
+  articleFocalPoints: {},
+  articleCoverOverrides: {},
 };

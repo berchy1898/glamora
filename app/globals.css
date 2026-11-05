@@ -3699,7 +3699,7 @@ body {
   justify-content: space-between;
   height: 100%;
   padding: clamp(24px, 3vw, 42px);
-  overflow-y: auto;
+  overflow: hidden;
   text-align: left;
 }
 
@@ -5065,277 +5065,447 @@ body {
 }
 
 /* ==========================================================================
-   6. PLIEGOS VOGUE ASIMÉTRICOS & enVOGUE COLLAGE EN EL LECTOR DE REVISTA
-   Inspirados directamente en las referencias de Vogue España / enVOGUE
+   6. PLIEGOS EDITORIALES DE ALTA COSTURA · GLAMORA DIGITAL MAGAZINE
+   Diseñados con fidelidad tipográfica milimétrica para impresión física real.
    ========================================================================== */
-.mag-vogue-asym-left {
-  background: #fbf8f3;
+
+/* Filtros de Tratamiento Fotográfico (Photoshop Studio) */
+.photo-filter-natural {
+  filter: none !important;
 }
 
-.mag-vogue-vignette-stack {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  gap: 16px;
-  padding: 6px 0;
+.photo-filter-warm-gold {
+  filter: sepia(0.2) saturate(1.15) contrast(1.02) !important;
 }
 
-.mag-vogue-vignette-card {
-  display: grid;
-  grid-template-columns: 135px minmax(0, 1fr);
-  gap: 16px;
-  align-items: center;
-  padding-bottom: 14px;
-  border-bottom: 1px solid rgba(31, 26, 23, .1);
+.photo-filter-black-and-white {
+  filter: grayscale(1) contrast(1.18) !important;
 }
 
-.mag-vogue-vignette-card:last-child {
-  border-bottom: 0;
-  padding-bottom: 0;
+.photo-filter-cinema-contrast {
+  filter: contrast(1.22) saturate(1.18) !important;
 }
 
-.mag-vogue-vignette-photo {
-  width: 135px;
-  height: 172px;
-  background: #f2ece4;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-}
-
-.mag-vogue-vignette-photo img {
-  width: 100%;
+/* 1. Glamora Classic Fashion Plate (Foto a página completa) */
+.mag-vogue-classic-left {
+  position: relative;
   height: 100%;
-  object-fit: cover;
-}
-
-.mag-vogue-vignette-copy strong {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--ink);
-  font: 600 9.5px/1.3 var(--font-ui);
-  letter-spacing: .2em;
-}
-
-.mag-vogue-vignette-copy p {
-  margin: 0;
-  color: #4a413c;
-  font: 11.5px/1.58 Georgia, serif;
-  text-align: justify;
-}
-
-.mag-vogue-asym-right {
-  gap: 10px;
-}
-
-.mag-vogue-hero-top {
-  height: 225px;
-  width: 100%;
-  overflow: hidden;
-  background: #f2ece4;
-}
-
-.mag-vogue-hero-top img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.mag-vogue-editorial-heading {
-  text-align: center;
-  padding: 4px 0 6px;
-  border-bottom: 1px solid rgba(31, 26, 23, .12);
-}
-
-.mag-vogue-script-subtitle {
-  display: block;
-  color: #711c32;
-  font: italic 22px/1 var(--font-editorial);
-  margin-bottom: 2px;
-}
-
-.mag-vogue-editorial-heading h3 {
-  margin: 0;
-  color: var(--ink);
-  font: 400 clamp(20px, 2.2vw, 28px)/1.05 var(--font-editorial);
-  letter-spacing: .08em;
-}
-
-.mag-vogue-bottom-split {
-  flex: 1;
-  display: grid;
-  grid-template-columns: .92fr 1.08fr;
-  gap: 16px;
-  align-items: start;
-  min-height: 0;
-}
-
-.mag-vogue-tall-inset {
-  height: 100%;
-  max-height: 250px;
-  overflow: hidden;
-  background: #f2ece4;
-}
-
-.mag-vogue-tall-inset img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.mag-vogue-dropcap-col {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  background: #faf7f2;
+  padding: clamp(20px, 2.5vw, 36px);
+  overflow: hidden;
+}
+
+.mag-classic-fashion-plate {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+  margin-bottom: 12px;
+  background: #18151b;
+}
+
+.mag-classic-fashion-plate img {
+  width: 100%;
   height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.mag-vogue-dropcap-para {
-  margin: 0 0 10px;
-  color: #362f2b;
-  font: 11.5px/1.6 Georgia, serif;
-  text-align: justify;
+.mag-plate-corner-tag {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: flex;
+  gap: 8px;
+  padding: 4px 10px;
+  background: rgba(23, 19, 26, 0.82);
+  backdrop-filter: blur(6px);
+  color: #dfcfbe;
+  font-size: 8px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  border: 1px solid rgba(223, 207, 190, 0.25);
 }
 
-.mag-vogue-dropcap-para::first-letter {
-  float: left;
-  padding: 2px 7px 0 0;
-  color: var(--ink);
-  font: 400 42px/.82 var(--font-editorial);
+/* 2. Glamora Asymmetric Spread (Doble Fotografía Jerárquica) */
+.mag-vogue-asym-left {
+  background: #faf7f2;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(20px, 2.5vw, 36px);
+  overflow: hidden;
 }
 
-/* Plantilla enVOGUE Collage / Moodboard */
+.mag-vogue-asym-spread-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.mag-asym-hero-box {
+  position: relative;
+  height: 58%;
+  width: 100%;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.mag-asym-hero-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mag-asym-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 3px 8px;
+  background: rgba(23, 19, 26, 0.78);
+  backdrop-filter: blur(4px);
+  color: #dfcfbe;
+  font-size: 7.5px;
+  letter-spacing: .16em;
+  font-weight: 600;
+}
+
+.mag-asym-split-bottom {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  gap: 14px;
+  height: 38%;
+  align-items: center;
+}
+
+.mag-asym-detail-photo {
+  position: relative;
+  height: 100%;
+  max-height: 140px;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.mag-asym-detail-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mag-asym-detail-photo small {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  background: rgba(23, 19, 26, 0.75);
+  color: #dfcfbe;
+  font-size: 7px;
+  letter-spacing: .12em;
+}
+
+.mag-asym-text-block strong {
+  display: block;
+  font-size: 8.5px;
+  letter-spacing: .2em;
+  color: var(--wine);
+  margin-bottom: 4px;
+}
+
+.mag-asym-text-block p {
+  margin: 0;
+  font: 12px/1.55 Georgia, serif;
+  color: #443c37;
+}
+
+/* 3. Glamora Atelier Collage / Moodboard */
 .mag-envogue-page {
   position: relative;
-  background: #fbf9f5;
+  background: #faf7f2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(20px, 2.5vw, 36px);
+  overflow: hidden;
 }
 
 .mag-envogue-header {
   display: flex;
   align-items: baseline;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid rgba(31, 26, 23, .12);
-  padding-bottom: 4px;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .mag-envogue-italic {
   color: #711c32;
-  font: italic 38px/.9 var(--font-editorial);
+  font: italic 32px/.8 var(--font-editorial);
 }
 
 .mag-envogue-masthead {
   color: var(--ink);
-  font: 400 46px/.9 var(--font-editorial);
-  letter-spacing: .12em;
+  font: 400 36px/.8 var(--font-editorial);
+  letter-spacing: .14em;
+}
+
+.mag-envogue-subtitle {
+  color: #776e68;
+  font-size: 7.5px;
+  letter-spacing: .18em;
 }
 
 .mag-envogue-collage-stage {
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   flex: 1;
-  display: grid;
-  place-items: center;
-  min-height: 420px;
-  padding: 12px;
+  overflow: hidden;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
 
 .mag-envogue-center-hero {
   position: relative;
-  width: 58%;
-  height: 370px;
-  background: #efe9e0;
-  box-shadow: 0 18px 40px rgba(25, 20, 18, .14);
-  z-index: 2;
+  flex: 1;
+  width: 100%;
+  max-height: 62%;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
 }
 
 .mag-envogue-center-hero img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
 .mag-envogue-tag {
   position: absolute;
-  bottom: -20px;
-  left: 0;
-  color: #6b5e57;
-  font-size: 7.5px;
-  letter-spacing: .2em;
-}
-
-.mag-envogue-floating {
-  position: absolute;
-  width: 132px;
-  padding: 7px 7px 10px;
-  background: #fffdfa;
-  border: 1px solid #dfd5ca;
-  box-shadow: 0 12px 28px rgba(25, 20, 18, .12);
-  z-index: 3;
-}
-
-.mag-envogue-floating img {
-  width: 100%;
-  height: 142px;
-  object-fit: cover;
-  display: block;
-}
-
-.mag-envogue-floating small {
-  display: block;
-  margin-top: 6px;
-  color: #711c32;
-  font-size: 6.5px;
-  letter-spacing: .18em;
-  text-align: center;
-}
-
-.mag-envogue-float-tl {
-  top: 14px;
+  bottom: 6px;
   left: 6px;
-  transform: rotate(-2.5deg);
+  color: #dfcfbe;
+  background: rgba(23, 19, 26, 0.78);
+  font-size: 7.5px;
+  letter-spacing: .16em;
+  padding: 2px 7px;
 }
 
-.mag-envogue-float-br {
-  bottom: 18px;
-  right: 6px;
-  transform: rotate(2.2deg);
-}
-
-.mag-envogue-right-duo {
+.mag-envogue-bottom-strip {
   display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-  margin: 8px 0;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  height: 34%;
 }
 
-.mag-envogue-side-polaroid {
-  padding: 8px 8px 12px;
-  background: #f4eee6;
-  border: 1px solid #dfd4c8;
-  text-align: center;
+.mag-envogue-detail-pill {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.mag-envogue-side-polaroid img {
+.mag-envogue-detail-pill img {
   width: 100%;
-  height: 145px;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.mag-envogue-side-polaroid span {
-  display: block;
-  margin-top: 6px;
-  color: #711c32;
+.mag-envogue-detail-pill small {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  background: rgba(23, 19, 26, 0.75);
+  color: #dfcfbe;
   font-size: 7px;
-  letter-spacing: .22em;
+  letter-spacing: .12em;
 }
 
-/* Mosaico social desfasado (no cuadrado ni rígido) */
-.mag-social-mosaic-asymmetric .mag-mosaic-cell {
+/* 4. Glamora Social Mosaic (Diario de Gala / Eventos) */
+.mag-social-mosaic-left {
   position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #faf7f2;
+  padding: clamp(20px, 2.5vw, 36px);
+  overflow: hidden;
+}
+
+.mag-social-header-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.mag-social-pill {
+  color: var(--wine);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.mag-social-venue {
+  color: #776e68;
+  font-size: 8px;
+  letter-spacing: .16em;
+}
+
+.mag-social-mosaic-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow: hidden;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mag-social-hero-box {
+  position: relative;
+  height: 56%;
+  width: 100%;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.mag-social-hero-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mag-social-tag {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  padding: 2px 7px;
+  background: rgba(23, 19, 26, 0.8);
+  color: #dfcfbe;
+  font-size: 7.5px;
+  letter-spacing: .14em;
+}
+
+.mag-social-duo-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  height: 38%;
+}
+
+.mag-social-duo-box {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.mag-social-duo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mag-social-duo-box small {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  padding: 2px 6px;
+  background: rgba(23, 19, 26, 0.75);
+  color: #dfcfbe;
+  font-size: 7px;
+  letter-spacing: .12em;
+}
+
+/* 5. Glamora Pull-Quote (Retrato de autor) */
+.mag-quote-spread-left {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #faf7f2;
+  padding: clamp(20px, 2.5vw, 36px);
+  overflow: hidden;
+}
+
+.mag-quote-portrait-plate {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  background: #18151b;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+  margin-bottom: 12px;
+}
+
+.mag-quote-portrait-plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mag-quote-plate-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 4px 10px;
+  background: rgba(23, 19, 26, 0.8);
+  color: #dfcfbe;
+  font-size: 8px;
+  letter-spacing: .16em;
+  border: 1px solid rgba(223, 207, 190, 0.25);
+}
+
+/* Cinema Spread Dark Theme */
+.mag-story-cinema {
+  background: #110e14 !important;
+  color: #fbf7f2 !important;
+}
+
+.mag-story-cinema .mag-story-headline {
+  color: #ffffff !important;
+}
+
+.mag-story-cinema .mag-story-columns {
+  color: #dfdcd7 !important;
+}
+
+.mag-story-dropcap::first-letter {
+  float: left;
+  font: 400 38px/0.85 var(--font-editorial);
+  color: var(--wine);
+  padding: 2px 8px 0 0;
+  text-transform: uppercase;
 }
 
 .mag-social-mosaic-asymmetric .mag-mosaic-cell-1 {

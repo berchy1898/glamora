@@ -14,6 +14,8 @@ import {
   type CoverMastheadPalette,
   type IssueDesignConfig,
   type SpreadLayoutStyle,
+  type PhotoEditorialFilter,
+  type PhotoFocalPoint,
 } from '@/lib/issue-design-types';
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
 import { EditorialImageCropperModal } from '@/components/EditorialImageCropperModal';
@@ -29,13 +31,64 @@ const MIME_TYPES: Record<string, string> = {
   webp: 'image/webp',
 };
 
-const LAYOUT_OPTIONS: { value: SpreadLayoutStyle; label: string }[] = [
-  { value: 'vogue-asymmetric', label: 'Glamora Signature Asimétrico (No Lineal · 2 Alturas + Capitular)' },
-  { value: 'vogue-collage', label: 'Glamora Atelier Collage & Moodboard (1 Protagonista + 3 Flotantes)' },
-  { value: 'vogue-classic', label: 'Glamora Clásico (Retrato Principal + Crónica)' },
-  { value: 'cinema-bleed', label: 'Glamora Cinema Full Bleed (Pliego Oscuro)' },
-  { value: 'social-mosaic', label: 'Glamora Social Mosaic (Photo Diary Desfasado)' },
-  { value: 'editorial-quote', label: 'Glamora Pull-Quote (Cita Destacada + Crónica)' },
+function getCleanUrl(raw?: string | null): string {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  if (trimmed.includes(' | ')) return trimmed.split(' | ')[0].trim();
+  if (trimmed.includes('|')) return trimmed.split('|')[0].trim();
+  return trimmed;
+}
+
+const LAYOUT_OPTIONS: { value: SpreadLayoutStyle; label: string; badge: string; desc: string }[] = [
+  {
+    value: 'vogue-classic',
+    label: '💎 Glamora Classic Fashion Plate (Foto a Página Completa + Crónica)',
+    badge: 'VOGUE CLASSIC',
+    desc: 'La foto principal llena la página izquierda con elegancia absoluta; crónica tipográfica a la derecha.',
+  },
+  {
+    value: 'vogue-asymmetric',
+    label: '🏛️ Glamora Asimétrico (Look Principal Grande + Detalle de Autor)',
+    badge: 'ASYMMETRIC',
+    desc: 'Doble fotografía jerárquica: imagen de impacto arriba y macro de detalle con cita abajo.',
+  },
+  {
+    value: 'vogue-collage',
+    label: '🎨 Atelier Moodboard (Composición de 3 Fotografías)',
+    badge: 'MOODBOARD',
+    desc: 'Foto central amplia con viñetas de detalle en la base sin cubrir el sujeto.',
+  },
+  {
+    value: 'cinema-bleed',
+    label: '🎬 Cinema Dark (Pliego Nocturno Obsidiana)',
+    badge: 'CINEMA DARK',
+    desc: 'Pliego oscuro de alto contraste e iluminación de gala, ideal para veladas nocturnas.',
+  },
+  {
+    value: 'social-mosaic',
+    label: '🍸 Glamora Social (Crónica de Evento / Panorámica + Coctelería & Música)',
+    badge: 'SOCIAL DIARY',
+    desc: 'Diseño para eventos: panorámica de la atmósfera arriba y dos momentos de la noche abajo.',
+  },
+  {
+    value: 'editorial-quote',
+    label: '📜 Gran Cita & Entrevista (Retrato de Autor + Cita Didone Gigante)',
+    badge: 'PULL-QUOTE',
+    desc: 'Retrato de impacto a la izquierda y colosal cita de autor abriendo la crónica a la derecha.',
+  },
+];
+
+const PHOTO_FILTERS: { value: PhotoEditorialFilter; label: string }[] = [
+  { value: 'natural', label: 'Color Natural HD (Original)' },
+  { value: 'warm-gold', label: 'Vogue Warm Gold (Cálido Estucado)' },
+  { value: 'black-and-white', label: 'Black & White Alta Costura' },
+  { value: 'cinema-contrast', label: 'Cinema Contrast (Dramático)' },
+];
+
+const FOCAL_POINTS: { value: PhotoFocalPoint; label: string }[] = [
+  { value: 'center', label: 'Centro (Equilibrado)' },
+  { value: 'top', label: 'Arriba (Rostro / Silueta)' },
+  { value: 'bottom', label: 'Abajo (Detalles / Calzado)' },
 ];
 
 export default function IssueBuilder() {
@@ -58,6 +111,7 @@ export default function IssueBuilder() {
   const [issues, setIssues] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
 
   // Configuración avanzada de maquetación (GLAMORA ISSUE DESIGN STUDIO)
   const [allDesigns, setAllDesigns] = useState<Record<string, IssueDesignConfig>>({});
@@ -93,6 +147,19 @@ export default function IssueBuilder() {
 
   async function loadStudioConfigs() {
     try {
+      // 1. Cargar directamente desde Supabase studio_settings con credenciales de sesión activa
+      const { data: row } = await db
+        .from('studio_settings')
+        .select('value')
+        .eq('key', 'issue_designs')
+        .maybeSingle();
+
+      if (row?.value && typeof row.value === 'object' && Object.keys(row.value).length > 0) {
+        setAllDesigns(row.value);
+        return;
+      }
+
+      // 2. Fallback a API
       const res = await fetch('/api/studio-config');
       if (!res.ok) return;
       const data = await res.json();
@@ -173,8 +240,38 @@ export default function IssueBuilder() {
     setDesign((prev) => ({
       ...prev,
       articleLayouts: {
-        ...prev.articleLayouts,
+        ...(prev.articleLayouts || {}),
         [articleId]: layout,
+      },
+    }));
+  }
+
+  function setArticleEditorialFilter(articleId: string, filter: PhotoEditorialFilter) {
+    setDesign((prev) => ({
+      ...prev,
+      articleFilters: {
+        ...(prev.articleFilters || {}),
+        [articleId]: filter,
+      },
+    }));
+  }
+
+  function setArticleFocalPoint(articleId: string, focal: PhotoFocalPoint) {
+    setDesign((prev) => ({
+      ...prev,
+      articleFocalPoints: {
+        ...(prev.articleFocalPoints || {}),
+        [articleId]: focal,
+      },
+    }));
+  }
+
+  function setArticleCoverOverride(articleId: string, photoUrl: string) {
+    setDesign((prev) => ({
+      ...prev,
+      articleCoverOverrides: {
+        ...(prev.articleCoverOverrides || {}),
+        [articleId]: photoUrl,
       },
     }));
   }
@@ -222,6 +319,9 @@ export default function IssueBuilder() {
       ...DEFAULT_ISSUE_DESIGN,
       ...savedDesign,
       articleLayouts: savedDesign.articleLayouts || {},
+      articleFilters: savedDesign.articleFilters || {},
+      articleFocalPoints: savedDesign.articleFocalPoints || {},
+      articleCoverOverrides: savedDesign.articleCoverOverrides || {},
     });
 
     setMessage('Editando maquetación de: ' + issue.title);
@@ -270,6 +370,7 @@ export default function IssueBuilder() {
 
         if (uploadError) {
           setMessage('Error al subir la portada: ' + uploadError.message);
+          setIsSaving(false);
           return;
         }
 
@@ -289,16 +390,51 @@ export default function IssueBuilder() {
         cover_story_id: chosen.includes(coverStoryId) ? coverStoryId : chosen[0],
       };
 
-      // Guardar diseño editorial avanzado en /api/studio-config
-      await fetch('/api/studio-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'save_issue_design',
-          issueKey: slug.trim(),
-          design,
-        }),
-      });
+      // Guardar diseño editorial directamente en Supabase studio_settings con JWT autenticado
+      const cleanSlug = slug.trim();
+      const { data: existingRow } = await db
+        .from('studio_settings')
+        .select('value')
+        .eq('key', 'issue_designs')
+        .maybeSingle();
+
+      const currentMap = (existingRow?.value && typeof existingRow.value === 'object')
+        ? existingRow.value
+        : {};
+
+      const nextDesignsMap = {
+        ...currentMap,
+        [cleanSlug]: design,
+        ...(editingId ? { [String(editingId)]: design } : {}),
+      };
+
+      await db
+        .from('studio_settings')
+        .upsert(
+          {
+            key: 'issue_designs',
+            value: nextDesignsMap,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'key' }
+        );
+
+      setAllDesigns(nextDesignsMap);
+
+      // Respaldo en API
+      try {
+        await fetch('/api/studio-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save_issue_design',
+            issueKey: cleanSlug,
+            design,
+          }),
+        });
+      } catch {
+        // ignore
+      }
 
       if (editingId) {
         const { data: currentIssue, error: currentIssueError } = await db
@@ -779,94 +915,300 @@ export default function IssueBuilder() {
                   <div className="eyebrow" style={{ marginBottom: 12 }}>
                     ESCALETA DE PLIEGOS Y PLANTILLA VISUAL POR ARTÍCULO ({chosen.length})
                   </div>
-                  <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ display: 'grid', gap: 14 }}>
                     {chosen.map((articleId, idx) => {
                       const art = articles.find((item) => item.id === articleId);
                       if (!art) return null;
                       const pageStart = (idx + 1) * 2 + 2;
                       const currentStyle =
                         design.articleLayouts[articleId] || 'vogue-classic';
+                      const currentFilter =
+                        design.articleFilters?.[articleId] || 'natural';
+                      const currentFocal =
+                        design.articleFocalPoints?.[articleId] || 'center';
+
+                      const coverPhoto = getCleanUrl(art.cover_image);
+                      const galleryPhotos = Array.isArray(art.gallery_images)
+                        ? art.gallery_images.map(getCleanUrl).filter(Boolean)
+                        : [];
+
+                      const availablePhotos: { url: string; label: string }[] = [];
+                      if (coverPhoto) {
+                        availablePhotos.push({ url: coverPhoto, label: '★ Portada oficial' });
+                      }
+                      galleryPhotos.forEach((url, pIdx) => {
+                        if (url !== coverPhoto && !availablePhotos.some((p) => p.url === url)) {
+                          availablePhotos.push({ url, label: `Galería #${pIdx + 1}` });
+                        }
+                      });
+
+                      const selectedPhotoUrl =
+                        design.articleCoverOverrides?.[articleId] ||
+                        coverPhoto ||
+                        availablePhotos[0]?.url ||
+                        '/brand/glamora-mark.png';
+
+                      const currentLayoutOption =
+                        LAYOUT_OPTIONS.find((o) => o.value === currentStyle) ||
+                        LAYOUT_OPTIONS[0];
+
                       return (
                         <div
                           key={articleId}
                           style={{
                             display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
+                            flexDirection: 'column',
                             gap: 12,
-                            flexWrap: 'wrap',
-                            padding: '10px 14px',
+                            padding: '16px 18px',
                             background: '#fffdfa',
-                            border: '1px solid #e7ded5',
+                            border: '1px solid #e2d7cc',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
                           }}
                         >
-                          <div style={{ flex: '1 1 240px' }}>
-                            <span style={{ fontSize: 13 }}>
-                              <strong style={{ color: '#711c32', marginRight: 8 }}>
-                                PÁG. {String(pageStart).padStart(2, '0')}–{String(pageStart + 1).padStart(2, '0')}
-                              </strong>
-                              {art.title}
-                              {coverStoryId === art.id && (
-                                <small
-                                  style={{
-                                    marginLeft: 8,
-                                    color: '#711c32',
-                                    letterSpacing: '.1em',
-                                  }}
-                                >
-                                  · COVER STORY
-                                </small>
-                              )}
-                            </span>
-                          </div>
-
+                          {/* Cabecera del Pliego */}
                           <div
                             style={{
                               display: 'flex',
+                              justifyContent: 'space-between',
                               alignItems: 'center',
-                              gap: 10,
+                              gap: 12,
                               flexWrap: 'wrap',
+                              borderBottom: '1px solid #f0eae2',
+                              paddingBottom: 10,
                             }}
                           >
-                            <select
-                              aria-label={`Plantilla visual para ${art.title}`}
-                              value={currentStyle}
-                              onChange={(e) =>
-                                setArticleSpreadLayout(
-                                  articleId,
-                                  e.target.value as SpreadLayoutStyle
-                                )
-                              }
+                            <div
                               style={{
-                                padding: '6px 10px',
-                                border: '1px solid #d8cec4',
-                                background: '#fbf9f5',
-                                fontSize: 11,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                flexWrap: 'wrap',
                               }}
                             >
-                              {LAYOUT_OPTIONS.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
+                              <span
+                                style={{
+                                  fontFamily: "'Didot', 'Playfair Display', Georgia, serif",
+                                  fontSize: 13,
+                                  fontWeight: 700,
+                                  background: '#711c32',
+                                  color: '#fff',
+                                  padding: '3px 8px',
+                                  letterSpacing: 1,
+                                }}
+                              >
+                                PÁG. {String(pageStart).padStart(2, '0')}–{String(pageStart + 1).padStart(2, '0')}
+                              </span>
+                              <strong style={{ fontSize: 14, color: '#18141c' }}>
+                                {art.title}
+                              </strong>
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  letterSpacing: 1,
+                                  textTransform: 'uppercase',
+                                  color: '#8a7c73',
+                                  background: '#f2ece4',
+                                  padding: '2px 6px',
+                                }}
+                              >
+                                {art.category || 'Editorial'} {art.city ? `· ${art.city}` : ''}
+                              </span>
+                              {coverStoryId === art.id && (
+                                <span
+                                  style={{
+                                    fontSize: 10,
+                                    letterSpacing: 1.5,
+                                    fontWeight: 700,
+                                    color: '#711c32',
+                                    border: '1px solid #711c32',
+                                    padding: '2px 6px',
+                                  }}
+                                >
+                                  ★ COVER STORY
+                                </span>
+                              )}
+                            </div>
 
-                            <button
-                              type="button"
-                              className="text-link"
-                              disabled={idx === 0 || isSaving}
-                              onClick={() => moveChosenArticle(idx, -1)}
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                className="text-link"
+                                disabled={idx === 0 || isSaving}
+                                onClick={() => moveChosenArticle(idx, -1)}
+                                style={{ fontSize: 11, padding: '4px 8px', background: '#f5efe8' }}
+                              >
+                                ↑ SUBIR
+                              </button>
+                              <button
+                                type="button"
+                                className="text-link"
+                                disabled={idx === chosen.length - 1 || isSaving}
+                                onClick={() => moveChosenArticle(idx, 1)}
+                                style={{ fontSize: 11, padding: '4px 8px', background: '#f5efe8' }}
+                              >
+                                ↓ BAJAR
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Controles de Maquetación de Pliego */}
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                              gap: 14,
+                              alignItems: 'start',
+                            }}
+                          >
+                            {/* Control 1: Plantilla Visual de Doble Página */}
+                            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#3d342f', letterSpacing: 0.5 }}>
+                                PLANTILLA VISUAL DE PLIEGO
+                              </span>
+                              <select
+                                value={currentStyle}
+                                onChange={(e) =>
+                                  setArticleSpreadLayout(articleId, e.target.value as SpreadLayoutStyle)
+                                }
+                                style={{
+                                  padding: '8px 10px',
+                                  border: '1px solid #d8cec4',
+                                  background: '#fff',
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {LAYOUT_OPTIONS.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <span style={{ fontSize: 11, color: '#8a7c73', fontStyle: 'italic', marginTop: 2 }}>
+                                {currentLayoutOption.desc}
+                              </span>
+                            </label>
+
+                            {/* Control 2: Foto de Apertura */}
+                            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#3d342f', letterSpacing: 0.5 }}>
+                                FOTOGRAFÍA PRINCIPAL (APERTURA)
+                              </span>
+                              <select
+                                value={selectedPhotoUrl}
+                                onChange={(e) => setArticleCoverOverride(articleId, e.target.value)}
+                                style={{
+                                  padding: '8px 10px',
+                                  border: '1px solid #d8cec4',
+                                  background: '#fff',
+                                  fontSize: 12,
+                                }}
+                              >
+                                {availablePhotos.map((p, pI) => (
+                                  <option key={pI} value={p.url}>
+                                    {p.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <span style={{ fontSize: 11, color: '#8a7c73', marginTop: 2 }}>
+                                {availablePhotos.length} {availablePhotos.length === 1 ? 'foto disponible' : 'fotos disponibles'} en este artículo.
+                              </span>
+                            </label>
+
+                            {/* Control 3: Filtro Editorial & Encuadre Focal */}
+                            <div style={{ display: 'flex', gap: 10 }}>
+                              <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, margin: 0 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#3d342f', letterSpacing: 0.5 }}>
+                                  FILTRO EDITORIAL
+                                </span>
+                                <select
+                                  value={currentFilter}
+                                  onChange={(e) =>
+                                    setArticleEditorialFilter(articleId, e.target.value as PhotoEditorialFilter)
+                                  }
+                                  style={{
+                                    padding: '8px 10px',
+                                    border: '1px solid #d8cec4',
+                                    background: '#fff',
+                                    fontSize: 12,
+                                  }}
+                                >
+                                  {PHOTO_FILTERS.map((f) => (
+                                    <option key={f.value} value={f.value}>
+                                      {f.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+
+                              <label style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4, margin: 0 }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#3d342f', letterSpacing: 0.5 }}>
+                                  ENCUADRE FOCAL
+                                </span>
+                                <select
+                                  value={currentFocal}
+                                  onChange={(e) =>
+                                    setArticleFocalPoint(articleId, e.target.value as PhotoFocalPoint)
+                                  }
+                                  style={{
+                                    padding: '8px 10px',
+                                    border: '1px solid #d8cec4',
+                                    background: '#fff',
+                                    fontSize: 12,
+                                  }}
+                                >
+                                  {FOCAL_POINTS.map((fp) => (
+                                    <option key={fp.value} value={fp.value}>
+                                      {fp.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </div>
+
+                            {/* Micro-Preview de Laboratorio Visual */}
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                padding: 8,
+                                background: '#faf7f2',
+                                border: '1px solid #e7ded5',
+                                borderRadius: 2,
+                              }}
                             >
-                              ↑ SUBIR
-                            </button>
-                            <button
-                              type="button"
-                              className="text-link"
-                              disabled={idx === chosen.length - 1 || isSaving}
-                              onClick={() => moveChosenArticle(idx, 1)}
-                            >
-                              ↓ BAJAR
-                            </button>
+                              <div
+                                style={{
+                                  width: 58,
+                                  height: 58,
+                                  position: 'relative',
+                                  overflow: 'hidden',
+                                  background: '#222',
+                                  flexShrink: 0,
+                                  borderRadius: 2,
+                                }}
+                              >
+                                <img
+                                  src={selectedPhotoUrl}
+                                  alt="Previsualización de foto"
+                                  className={`photo-filter-${currentFilter}`}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    objectPosition: currentFocal,
+                                  }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: 11 }}>
+                                <strong style={{ color: '#18141c' }}>{currentLayoutOption.badge}</strong>
+                                <span style={{ color: '#711c32', fontSize: 10, textTransform: 'uppercase' }}>
+                                  Filtro: {currentFilter}
+                                </span>
+                                <span style={{ color: '#8a7c73', fontSize: 10 }}>Foco: {currentFocal}</span>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -876,14 +1218,15 @@ export default function IssueBuilder() {
               )}
             </div>
 
-            {/* BOTONES DE GUARDADO */}
+            {/* BOTONES DE GUARDADO Y PREVISUALIZACIÓN */}
             <div
               className="wide"
               style={{
                 display: 'flex',
                 gap: 12,
                 flexWrap: 'wrap',
-                marginTop: 12,
+                marginTop: 16,
+                alignItems: 'center',
               }}
             >
               <button
@@ -898,12 +1241,27 @@ export default function IssueBuilder() {
                     : 'GUARDAR EDICIÓN EN STUDIO ↗'}
               </button>
 
+              <button
+                type="button"
+                className="button-primary"
+                disabled={!chosen.length}
+                onClick={() => setPreviewModalOpen(true)}
+                style={{
+                  background: '#1c1815',
+                  borderColor: '#1c1815',
+                  color: '#fbf7f2',
+                }}
+              >
+                👁️ PREVISUALIZAR REVISTA EN VIVO
+              </button>
+
               {editingId && (
                 <button
                   type="button"
                   className="button-primary"
                   onClick={cancelEdit}
                   disabled={isSaving}
+                  style={{ background: '#7a7067', borderColor: '#7a7067' }}
                 >
                   CANCELAR EDICIÓN
                 </button>
@@ -972,6 +1330,81 @@ export default function IssueBuilder() {
             </tbody>
           </table>
         </section>
+        {/* MODAL DE PREVISUALIZACIÓN EN VIVO (FULLSCREEN EDITORIAL READER) */}
+        {previewModalOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99999,
+              background: 'rgba(15, 12, 18, 0.96)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '12px 24px',
+                background: '#18141c',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                color: '#f8f4ed',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: '#c4b5a9',
+                  }}
+                >
+                  GLAMORA STUDIO · PREVISUALIZADOR HAUTE COUTURE EN TIEMPO REAL
+                </span>
+                <strong style={{ fontSize: 13, color: '#e7c7b4' }}>
+                  {title || 'Edición de Muestra'}
+                </strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewModalOpen(false)}
+                style={{
+                  background: '#711c32',
+                  border: 'none',
+                  color: '#fff',
+                  padding: '8px 18px',
+                  fontSize: 11,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  borderRadius: 2,
+                  fontWeight: 600,
+                }}
+              >
+                ✕ CERRAR PREVISUALIZACIÓN
+              </button>
+            </div>
+
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+              <InteractiveIssueReader
+                defaultOpen={true}
+                issueNumber={number || '01'}
+                issueTitle={title || 'GLAMORA MAGAZINE'}
+                coverImage={coverPreview || cover || undefined}
+                coverStoryId={coverStoryId}
+                articles={chosen
+                  .map((id) => articles.find((a) => a.id === id))
+                  .filter(Boolean) as any}
+                sponsors={sponsors}
+                design={design}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -114,10 +114,22 @@ export default async function Issue({
     article => article.id !== featuredArticle?.id
   );
 
+  const { data: dbIssueDesignsRow } = await db
+    .from('studio_settings')
+    .select('value')
+    .eq('key', 'issue_designs')
+    .maybeSingle();
+
+  const cloudDesigns = dbIssueDesignsRow?.value || {};
   const studioConfig = await readStudioConfig();
+  const allDesigns = {
+    ...studioConfig.issueDesigns,
+    ...cloudDesigns,
+  };
+
   const issueDesign =
-    studioConfig.issueDesigns[issue.slug] ||
-    studioConfig.issueDesigns[String(issue.id)] ||
+    allDesigns[issue.slug] ||
+    allDesigns[String(issue.id)] ||
     DEFAULT_ISSUE_DESIGN;
 
   return (

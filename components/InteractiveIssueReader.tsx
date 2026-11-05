@@ -25,6 +25,22 @@ type IssueArticleItem = {
   people_tags?: string[] | null;
 };
 
+function getCleanImageUrl(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  if (trimmed.includes(' | ')) return trimmed.split(' | ')[0].trim();
+  if (trimmed.includes('|')) return trimmed.split('|')[0].trim();
+  return trimmed;
+}
+
+function getPhotoCaption(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const trimmed = String(raw).trim();
+  if (trimmed.includes(' | ')) return trimmed.split(' | ').slice(1).join(' | ').trim();
+  if (trimmed.includes('|')) return trimmed.split('|').slice(1).join('|').trim();
+  return '';
+}
+
 type IssueSponsorItem = {
   id: string;
   brand_name: string;
@@ -374,26 +390,43 @@ export function InteractiveIssueReader({
       const currentArticle = articles[artIdx];
       const pageNumFormatted = String(pageIdx).padStart(2, '0');
 
-      const currentLayout: SpreadLayoutStyle =
-        mergedDesign.articleLayouts[currentArticle.id] ||
-        (Array.isArray(currentArticle.gallery_images) &&
-        currentArticle.gallery_images.filter(Boolean).length >= 3
-          ? 'vogue-collage'
-          : 'vogue-asymmetric');
+      // Limpieza exhaustiva de URLs de fotografía (evita URLs rotas por epígrafes 'url | caption')
+      const cleanGallery = (currentArticle.gallery_images || [])
+        .map(getCleanImageUrl)
+        .filter(Boolean);
+      const cleanCover = getCleanImageUrl(
+        mergedDesign?.articleCoverOverrides?.[currentArticle.id] || currentArticle.cover_image
+      );
+      const primaryPhoto = cleanCover || cleanGallery[0] || '/brand/glamora-mark.png';
+      const secondaryPhoto =
+        cleanGallery.find((u) => u !== primaryPhoto) || cleanGallery[0] || primaryPhoto;
+      const tertiaryPhoto =
+        cleanGallery.filter((u) => u !== primaryPhoto && u !== secondaryPhoto)[0] ||
+        secondaryPhoto;
 
-      // LADO IZQUIERDO: ARTE / FOTOGRAFÍA / COMPOSICIÓN
+      const photoFilter = mergedDesign?.articleFilters?.[currentArticle.id] || 'natural';
+      const focalPoint = mergedDesign?.articleFocalPoints?.[currentArticle.id] || 'center';
+      const filterStyleClass = `photo-filter-${photoFilter}`;
+
+      const currentLayout: SpreadLayoutStyle =
+        mergedDesign.articleLayouts?.[currentArticle.id] ||
+        mergedDesign.articleLayouts?.[currentArticle.slug] ||
+        'vogue-classic';
+
+      // LADO IZQUIERDO: ARTE / FOTOGRAFÍA / COMPOSICIÓN EDITORIAL DE ALTA COSTURA
       if (isLeft) {
+        // 1. Cinema Full Bleed
         if (currentLayout === 'cinema-bleed') {
           return (
             <div className={`mag-page mag-page-cinema-dark ${slot === 'left' ? 'mag-page-left' : ''}`}>
               <div className="mag-cinema-frame">
-                {currentArticle.cover_image && (
-                  <img
-                    src={currentArticle.cover_image}
-                    alt={currentArticle.title}
-                    draggable={false}
-                  />
-                )}
+                <img
+                  src={primaryPhoto}
+                  alt={currentArticle.title}
+                  draggable={false}
+                  className={filterStyleClass}
+                  style={{ objectPosition: focalPoint }}
+                />
                 <div className="mag-cinema-caption">
                   <span>
                     {[currentArticle.category, currentArticle.city]
@@ -406,111 +439,86 @@ export function InteractiveIssueReader({
               </div>
               <footer className="mag-page-folio" style={{ color: '#c4b5a9' }}>
                 <span>PÁG. {pageNumFormatted}</span>
-                <span>CINEMA SPREAD</span>
+                <span>GLAMORA · CINEMA SPREAD</span>
               </footer>
             </div>
           );
         }
 
+        // 2. Glamora Asymmetric Spread (Doble fotografía noble y jerárquica)
         if (currentLayout === 'vogue-asymmetric') {
           return (
             <div className={`mag-page mag-vogue-asym-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
               <span className="mag-kicker">
                 GLAMORA SIGNATURE · {(currentArticle.city || 'BOLIVIA').toUpperCase()}
               </span>
-              <div className="mag-vogue-vignette-stack">
-                {[
-                  currentArticle.gallery_images?.[0] || currentArticle.cover_image,
-                  currentArticle.gallery_images?.[1] || currentArticle.cover_image,
-                ]
-                  .filter(Boolean)
-                  .map((imgUrl, vIdx) => {
-                    const paragraphs = extractEditorialVideo(currentArticle.body || '')
-                      .cleanBody.replace(/\[IMAGEN:[^\]]+\]/gi, '')
-                      .split(/\n\s*\n/)
-                      .map((p: string) =>
-                        p.replace(/^##\s+/, '').replace(/^>\s+/, '').trim()
-                      )
-                      .filter(Boolean);
-                    const snippet =
-                      paragraphs[vIdx] ||
-                      currentArticle.excerpt ||
-                      'Crónica y mirada propia desde nuestras ciudades.';
-                    return (
-                      <article key={vIdx} className="mag-vogue-vignette-card">
-                        <div className="mag-vogue-vignette-photo">
-                          <img
-                            src={imgUrl as string}
-                            alt={`${currentArticle.title} detalle ${vIdx + 1}`}
-                            draggable={false}
-                          />
-                        </div>
-                        <div className="mag-vogue-vignette-copy">
-                          <strong>
-                            {vIdx === 0
-                              ? (currentArticle.event_name || currentArticle.category || 'EL ESTILO').toUpperCase()
-                              : (currentArticle.venue || currentArticle.author || 'LA ESCENA').toUpperCase()}
-                          </strong>
-                          <p>{snippet.slice(0, 190)}{snippet.length > 190 ? '…' : ''}</p>
-                        </div>
-                      </article>
-                    );
-                  })}
+              <div className="mag-vogue-asym-spread-stage">
+                <div className="mag-asym-hero-box">
+                  <img
+                    src={primaryPhoto}
+                    alt={currentArticle.title}
+                    draggable={false}
+                    className={filterStyleClass}
+                    style={{ objectPosition: focalPoint }}
+                  />
+                  <span className="mag-asym-badge">01 · {(currentArticle.event_name || currentArticle.category || 'LOOK PRINCIPAL').toUpperCase()}</span>
+                </div>
+                <div className="mag-asym-split-bottom">
+                  <div className="mag-asym-detail-photo">
+                    <img
+                      src={secondaryPhoto}
+                      alt={`${currentArticle.title} detalle`}
+                      draggable={false}
+                      className={filterStyleClass}
+                    />
+                    <small>02 · DETALLE</small>
+                  </div>
+                  <div className="mag-asym-text-block">
+                    <strong>{(currentArticle.venue || currentArticle.author || 'ESENCIA EDITORIAL').toUpperCase()}</strong>
+                    <p>{currentArticle.excerpt ? `“${currentArticle.excerpt.slice(0, 130)}…”` : 'Crónica visual de alta moda y vida contemporánea.'}</p>
+                  </div>
+                </div>
               </div>
               <footer className="mag-page-folio">
                 <span>PÁG. {pageNumFormatted}</span>
-                <span>GLAMORA · THE EDIT</span>
+                <span>GLAMORA · THE ASYMMETRIC EDIT</span>
               </footer>
             </div>
           );
         }
 
+        // 3. Glamora Atelier Collage / Moodboard (Composición de 3 fotos sin tapar el sujeto)
         if (currentLayout === 'vogue-collage') {
           return (
             <div className={`mag-page mag-envogue-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
               <div className="mag-envogue-header">
                 <span className="mag-envogue-italic">The</span>
                 <strong className="mag-envogue-masthead">GLAMORA</strong>
+                <span className="mag-envogue-subtitle">ATELIER MOODBOARD · {(currentArticle.category || 'LOOK').toUpperCase()}</span>
               </div>
               <div className="mag-envogue-collage-stage">
                 <div className="mag-envogue-center-hero">
                   <img
-                    src={
-                      (currentArticle.cover_image ||
-                        currentArticle.gallery_images?.[0]) as string
-                    }
+                    src={primaryPhoto}
                     alt={currentArticle.title}
                     draggable={false}
+                    className={filterStyleClass}
+                    style={{ objectPosition: focalPoint }}
                   />
                   <span className="mag-envogue-tag">
-                    01 · {(currentArticle.category || 'LOOK').toUpperCase()}
+                    01 · {(currentArticle.event_name || currentArticle.title).toUpperCase().slice(0, 32)}
                   </span>
                 </div>
 
-                <div className="mag-envogue-floating mag-envogue-float-tl">
-                  <img
-                    src={
-                      (currentArticle.gallery_images?.[0] ||
-                        currentArticle.cover_image) as string
-                    }
-                    alt="Detalle 1"
-                    draggable={false}
-                  />
-                  <small>DETALLE EDITORIAL · 02</small>
-                </div>
-
-                <div className="mag-envogue-floating mag-envogue-float-br">
-                  <img
-                    src={
-                      (currentArticle.gallery_images?.[1] ||
-                        currentArticle.cover_image) as string
-                    }
-                    alt="Detalle 2"
-                    draggable={false}
-                  />
-                  <small>
-                    {(currentArticle.city || 'BOLIVIA').toUpperCase()} · 03
-                  </small>
+                <div className="mag-envogue-bottom-strip">
+                  <div className="mag-envogue-detail-pill">
+                    <img src={secondaryPhoto} alt="Detalle 02" draggable={false} className={filterStyleClass} />
+                    <small>02 · ENCUADRE</small>
+                  </div>
+                  <div className="mag-envogue-detail-pill">
+                    <img src={tertiaryPhoto} alt="Detalle 03" draggable={false} className={filterStyleClass} />
+                    <small>03 · ATMÓSFERA</small>
+                  </div>
                 </div>
               </div>
               <footer className="mag-page-folio">
@@ -521,52 +529,109 @@ export function InteractiveIssueReader({
           );
         }
 
-        // Layout por defecto: fotograma visual destacado
-        return (
-          <div className={`mag-page mag-page-visual ${slot === 'left' ? 'mag-page-left' : ''}`}>
-            <div className="mag-visual-frame">
-              {currentArticle.cover_image ? (
+        // 4. Glamora Social Mosaic (Para coberturas y noches de gala)
+        if (currentLayout === 'social-mosaic') {
+          return (
+            <div className={`mag-page mag-social-mosaic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className="mag-social-header-banner">
+                <span className="mag-social-pill">GLAMORA SOCIAL</span>
+                <span className="mag-social-venue">
+                  {(currentArticle.venue || currentArticle.city || 'BOLIVIA').toUpperCase()}
+                </span>
+              </div>
+              <div className="mag-social-mosaic-grid">
+                <div className="mag-social-hero-box">
+                  <img
+                    src={primaryPhoto}
+                    alt={currentArticle.title}
+                    draggable={false}
+                    className={filterStyleClass}
+                    style={{ objectPosition: focalPoint }}
+                  />
+                  <span className="mag-social-tag">01 · AMBIENTE &middot; {currentArticle.venue || currentArticle.title}</span>
+                </div>
+                <div className="mag-social-duo-row">
+                  <div className="mag-social-duo-box">
+                    <img src={secondaryPhoto} alt="Momento 02" draggable={false} className={filterStyleClass} />
+                    <small>02 · COCTELERÍA &amp; SABOR</small>
+                  </div>
+                  <div className="mag-social-duo-box">
+                    <img src={tertiaryPhoto} alt="Momento 03" draggable={false} className={filterStyleClass} />
+                    <small>03 · MÚSICA &amp; ESCENA</small>
+                  </div>
+                </div>
+              </div>
+              <footer className="mag-page-folio">
+                <span>PÁG. {pageNumFormatted}</span>
+                <span>GLAMORA SOCIAL · {(currentArticle.city || 'COCHABAMBA').toUpperCase()}</span>
+              </footer>
+            </div>
+          );
+        }
+
+        // 5. Glamora Pull-Quote (Retrato de autor / entrevista)
+        if (currentLayout === 'editorial-quote') {
+          return (
+            <div className={`mag-page mag-quote-spread-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className="mag-quote-portrait-plate">
                 <img
-                  src={currentArticle.cover_image}
+                  src={primaryPhoto}
                   alt={currentArticle.title}
                   draggable={false}
+                  className={filterStyleClass}
+                  style={{ objectPosition: focalPoint }}
                 />
-              ) : (
-                <div className="mag-cover-placeholder">
-                  <span>GLAMORA</span>
+                <div className="mag-quote-plate-badge">
+                  <span>ENTREVISTA DE AUTOR &middot; VOZ EDITORIAL</span>
                 </div>
-              )}
+              </div>
+              <footer className="mag-page-folio">
+                <span>PÁG. {pageNumFormatted}</span>
+                <span>GLAMORA · DIÁLOGOS</span>
+              </footer>
             </div>
-            {Array.isArray(currentArticle.gallery_images) &&
-              currentArticle.gallery_images.filter(Boolean).length > 0 && (
-                <div className="mag-mini-gallery">
-                  {currentArticle.gallery_images
-                    .filter(Boolean)
-                    .slice(0, 3)
-                    .map((imgUrl, gIdx) => (
-                      <div key={gIdx} className="mag-mini-thumb">
-                        <img
-                          src={imgUrl}
-                          alt={`${currentArticle.title} ${gIdx + 1}`}
-                          draggable={false}
-                        />
-                      </div>
-                    ))}
-                </div>
-              )}
+          );
+        }
+
+        // 6. Glamora Classic Fashion Plate (Gran foto a página completa sin deformaciones)
+        return (
+          <div className={`mag-page mag-vogue-classic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+            <div className="mag-classic-fashion-plate">
+              <img
+                src={primaryPhoto}
+                alt={currentArticle.title}
+                draggable={false}
+                className={filterStyleClass}
+                style={{ objectPosition: focalPoint }}
+              />
+              <div className="mag-plate-corner-tag">
+                <span>{(currentArticle.category || 'ALTA MODA').toUpperCase()}</span>
+                <span>{(currentArticle.city || 'BOLIVIA').toUpperCase()}</span>
+              </div>
+            </div>
             <footer className="mag-page-folio">
               <span>PÁG. {pageNumFormatted}</span>
-              <span>{(currentArticle.event_name || currentArticle.city || 'GLAMORA').toUpperCase()}</span>
+              <span>GLAMORA · HAUTE ÉDITION</span>
             </footer>
           </div>
         );
       }
 
-      // LADO DERECHO: CRÓNICA Y TITULARES
+      // LADO DERECHO: CRÓNICA Y TITULARES TIPOGRÁFICOS DE REVISTA (CALIBRADOS SIN SCROLLBARS)
+      const isCinemaRight = currentLayout === 'cinema-bleed';
+      const isLongTitle = (currentArticle.title || '').length > 55;
+
       return (
-        <div className={`mag-page mag-page-story ${slot === 'right' ? 'mag-page-right' : ''}`}>
+        <div
+          className={`mag-page mag-page-story ${
+            isCinemaRight ? 'mag-story-cinema' : ''
+          } ${slot === 'right' ? 'mag-page-right' : ''}`}
+        >
           <div className="mag-page-inner">
-            <span className="mag-kicker">
+            <span
+              className="mag-kicker"
+              style={isCinemaRight ? { color: '#dfcfbe' } : {}}
+            >
               {[
                 currentArticle.id === coverStoryId ? 'COVER STORY' : null,
                 currentArticle.category,
@@ -577,19 +642,46 @@ export function InteractiveIssueReader({
                 .toUpperCase()}
             </span>
 
-            <h3 className="mag-story-headline">{currentArticle.title}</h3>
+            <h3
+              className="mag-story-headline"
+              style={{
+                fontSize: isLongTitle ? 'clamp(20px, 2.3vw, 29px)' : undefined,
+                color: isCinemaRight ? '#fcfaf6' : undefined,
+              }}
+            >
+              {currentArticle.title}
+            </h3>
 
             {currentArticle.author && (
-              <div className="mag-story-byline">
+              <div
+                className="mag-story-byline"
+                style={isCinemaRight ? { color: '#baa89b' } : {}}
+              >
                 POR {currentArticle.author.toUpperCase()}
               </div>
             )}
 
             {currentArticle.excerpt && (
-              <p className="mag-pull-quote">&ldquo;{currentArticle.excerpt}&rdquo;</p>
+              <p
+                className="mag-pull-quote"
+                style={
+                  isCinemaRight
+                    ? {
+                        background: 'rgba(255,255,255,0.06)',
+                        color: '#dfcfbe',
+                        borderColor: '#dfcfbe',
+                      }
+                    : {}
+                }
+              >
+                &ldquo;{currentArticle.excerpt}&rdquo;
+              </p>
             )}
 
-            <div className="mag-story-columns">
+            <div
+              className="mag-story-columns"
+              style={isCinemaRight ? { color: '#dfdcd7' } : {}}
+            >
               {extractEditorialVideo(currentArticle.body || '')
                 .cleanBody.replace(/\[IMAGEN:[^\]]+\]/gi, '')
                 .split(/\n\s*\n/)
@@ -599,13 +691,18 @@ export function InteractiveIssueReader({
                 .filter(Boolean)
                 .slice(0, 2)
                 .map((para: string, pIdx: number) => (
-                  <p key={pIdx}>{para}</p>
+                  <p key={pIdx} className={pIdx === 0 ? 'mag-story-dropcap' : ''}>
+                    {para}
+                  </p>
                 ))}
             </div>
 
             {Array.isArray(currentArticle.people_tags) &&
               currentArticle.people_tags.filter(Boolean).length > 0 && (
-                <div className="mag-story-people">
+                <div
+                  className="mag-story-people"
+                  style={isCinemaRight ? { color: '#baa89b' } : {}}
+                >
                   <span>PROTAGONISTAS: </span>
                   {currentArticle.people_tags.filter(Boolean).slice(0, 5).join(' · ')}
                 </div>
@@ -615,6 +712,11 @@ export function InteractiveIssueReader({
               <Link
                 href={`/articulo/${currentArticle.slug}`}
                 className="mag-story-read-link"
+                style={
+                  isCinemaRight
+                    ? { background: '#dfcfbe', color: '#17151a', borderColor: '#dfcfbe' }
+                    : {}
+                }
                 onClick={() => setIsOpen(false)}
               >
                 LEER NOTA Y GALERÍA COMPLETA ↗
@@ -622,7 +724,10 @@ export function InteractiveIssueReader({
             </div>
           </div>
 
-          <footer className="mag-page-folio">
+          <footer
+            className="mag-page-folio"
+            style={isCinemaRight ? { color: '#baa89b' } : {}}
+          >
             <span>GLAMORA · {issueTitle.toUpperCase()}</span>
             <span>PÁG. {pageNumFormatted}</span>
           </footer>

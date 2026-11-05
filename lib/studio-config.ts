@@ -6,6 +6,8 @@ import {
   type CoverMastheadPalette,
   type IssueDesignConfig,
   type SpreadLayoutStyle,
+  type PhotoEditorialFilter,
+  type PhotoFocalPoint,
 } from '@/lib/issue-design-types';
 
 export {
@@ -13,6 +15,8 @@ export {
   type CoverMastheadPalette,
   type IssueDesignConfig,
   type SpreadLayoutStyle,
+  type PhotoEditorialFilter,
+  type PhotoFocalPoint,
 };
 
 export type StudioSocialLinks = Record<SocialPlatform, string>;
