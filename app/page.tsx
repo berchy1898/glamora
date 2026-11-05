@@ -8,7 +8,7 @@ import { SocialAdaptiveTile } from '@/components/SocialAdaptiveTile';
 import { SponsorSlot } from '@/components/SponsorSlot';
 import { readStudioConfig } from '@/lib/studio-config';
 import { getLatestPublishedIssue } from '@/lib/issues-data';
-import { HomeIssueKiosk } from '@/components/HomeIssueKiosk';
+import { HomeIssueSidebar } from '@/components/HomeIssueSidebar';
 
 type SocialTileItem = {
   key: string;
@@ -242,9 +242,6 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Haute Couture Kiosk - The Issues Showcase */}
-      {latestIssue && <HomeIssueKiosk issue={latestIssue} />}
-
       <section className="container latest-section">
         <div className="section-heading">
           <div>
@@ -256,23 +253,30 @@ export default async function Home() {
           </Link>
         </div>
 
-        {visibleArticles.length > 0 ? (
-          <div className={`article-grid editorial-story-grid article-grid-count-${visibleArticles.length}`}>
-            {visibleArticles.map((article, index) => (
-              <ArticleCard key={article.id} article={article} large={visibleArticles.length === 3 && index === 0} />
-            ))}
+        <div className={latestIssue ? 'latest-with-sidebar-wrap' : ''}>
+          <div className="latest-articles-col">
+            {visibleArticles.length > 0 ? (
+              <div className={`article-grid editorial-story-grid article-grid-count-${visibleArticles.length}`}>
+                {visibleArticles.map((article, index) => (
+                  <ArticleCard key={article.id} article={article} large={visibleArticles.length === 3 && index === 0} />
+                ))}
+              </div>
+            ) : articlesUnavailable ? (
+              <div className="editorial-note" role="status">
+                <span>GLAMORA EDITORIAL</span>
+                <p>Las historias recientes no están disponibles temporalmente.</p>
+              </div>
+            ) : (
+              <div className="editorial-note">
+                <span>GLAMORA EDITORIAL</span>
+                <p>Aún no hay historias publicadas.</p>
+              </div>
+            )}
           </div>
-        ) : articlesUnavailable ? (
-          <div className="editorial-note" role="status">
-            <span>GLAMORA EDITORIAL</span>
-            <p>Las historias recientes no están disponibles temporalmente.</p>
-          </div>
-        ) : (
-          <div className="editorial-note">
-            <span>GLAMORA EDITORIAL</span>
-            <p>Aún no hay historias publicadas.</p>
-          </div>
-        )}
+
+          {/* A un costado: GLAMORA The Issue — Anuncio de Nuestra Primera Edición */}
+          {latestIssue && <HomeIssueSidebar issue={latestIssue} />}
+        </div>
       </section>
 
       <section className="social-band">
