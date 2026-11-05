@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseBrowser } from '@/lib/supabase-browser';
 import type { Article } from '@/lib/data';
@@ -19,6 +19,7 @@ import {
 } from '@/lib/issue-design-types';
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
 import { EditorialImageCropperModal } from '@/components/EditorialImageCropperModal';
+import { buildIssuePaginationPlan } from '@/lib/issue-pagination';
 
 const MAX_FILE_SIZE = MAX_RAW_IMAGE_BYTES;
 
@@ -116,6 +117,13 @@ export default function IssueBuilder() {
   // Configuración avanzada de maquetación (GLAMORA ISSUE DESIGN STUDIO)
   const [allDesigns, setAllDesigns] = useState<Record<string, IssueDesignConfig>>({});
   const [design, setDesign] = useState<IssueDesignConfig>(DEFAULT_ISSUE_DESIGN);
+
+  const paginationPlan = useMemo(() => {
+    const chosenArticles = chosen
+      .map((id) => articles.find((a) => a.id === id))
+      .filter(Boolean) as any[];
+    return buildIssuePaginationPlan(chosenArticles, design);
+  }, [chosen, articles, design]);
 
   useEffect(() => {
     if (!coverFile) {
@@ -919,7 +927,10 @@ export default function IssueBuilder() {
                     {chosen.map((articleId, idx) => {
                       const art = articles.find((item) => item.id === articleId);
                       if (!art) return null;
-                      const pageStart = (idx + 1) * 2 + 2;
+                      const pageInfo = paginationPlan.articlePageMap[articleId];
+                      const pageLabel =
+                        pageInfo?.pageRangeLabel ||
+                        `PÁG. ${String((idx + 1) * 2 + 2).padStart(2, '0')}`;
                       const currentStyle =
                         design.articleLayouts[articleId] || 'vogue-classic';
                       const currentFilter =
@@ -996,11 +1007,14 @@ export default function IssueBuilder() {
                                   letterSpacing: 1,
                                 }}
                               >
-                                PÁG. {String(pageStart).padStart(2, '0')}–{String(pageStart + 1).padStart(2, '0')}
+                                {pageLabel}
                               </span>
                               <strong style={{ fontSize: 14, color: '#18141c' }}>
                                 {art.title}
                               </strong>
+                              <small style={{ color: '#8a7c73', fontSize: 11 }}>
+                                ({pageInfo ? pageInfo.totalIndividualPages : 2} págs / {pageInfo ? pageInfo.totalSpreads : 1} pliegos)
+                              </small>
                               <span
                                 style={{
                                   fontSize: 10,

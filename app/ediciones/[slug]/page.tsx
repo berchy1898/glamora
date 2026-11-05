@@ -5,6 +5,7 @@ import { supabaseServer } from '@/lib/supabase';
 import { ArticleCard } from '@/components/ArticleCard';
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
 import { DEFAULT_ISSUE_DESIGN, readStudioConfig } from '@/lib/studio-config';
+import { buildIssuePaginationPlan } from '@/lib/issue-pagination';
 
 export async function generateMetadata({
   params,
@@ -132,6 +133,8 @@ export default async function Issue({
     allDesigns[String(issue.id)] ||
     DEFAULT_ISSUE_DESIGN;
 
+  const paginationPlan = buildIssuePaginationPlan(articles, issueDesign);
+
   return (
     <main className="issue-page">
       <div className="issue-container">
@@ -140,7 +143,7 @@ export default async function Issue({
             THE GLAMORA DIGITAL ISSUE · Nº {issue.issue_number}
           </div>
           <h1>{issue.title}</h1>
-          <p>Toca la portada para hojear la edición digital página por página.</p>
+          <p>Toca la portada o el sumario para hojear la edición digital completa página por página.</p>
         </header>
 
         <InteractiveIssueReader
@@ -169,12 +172,20 @@ export default async function Issue({
             <ol className="issue-toc-list">
               {articles.map((art: any, index: number) => {
                 const isCover = art.id === featuredArticle?.id;
+                const pageInfo =
+                  paginationPlan.articlePageMap[art.id] ||
+                  paginationPlan.articlePageMap[art.slug];
+                const pageLabel =
+                  pageInfo?.pageRangeLabel || `PÁG. ${String(index + 1).padStart(2, '0')}`;
+
                 return (
                   <li key={`toc-${art.id}`} className="issue-toc-item">
-                    <Link href={`/articulo/${art.slug}`} className="issue-toc-link">
-                      <span className="issue-toc-num">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
+                    <a
+                      href={`#historia-${art.slug}`}
+                      className="issue-toc-link"
+                      title={`Abrir ${art.title} en la revista digital (${pageLabel})`}
+                    >
+                      <span className="issue-toc-num">{pageLabel}</span>
                       <div className="issue-toc-body">
                         <span className="issue-toc-meta">
                           {[
@@ -191,8 +202,8 @@ export default async function Issue({
                           <small className="issue-toc-author">Por {art.author}</small>
                         )}
                       </div>
-                      <span className="issue-toc-cta">LEER ↗</span>
-                    </Link>
+                      <span className="issue-toc-cta">HOJEAR EN REVISTA →</span>
+                    </a>
                   </li>
                 );
               })}
@@ -210,12 +221,21 @@ export default async function Issue({
           </div>
 
           {featuredArticle && (
-            <>
-              <div className="issue-story-label">COVER STORY</div>
+            <div style={{ marginBottom: 28 }}>
+              <div className="issue-story-label" style={{ marginBottom: 10 }}>COVER STORY</div>
               <div className="issue-feature">
-                <ArticleCard article={featuredArticle} large={true} />
+                <ArticleCard
+                  article={featuredArticle}
+                  large={true}
+                  href={`#historia-${featuredArticle.slug}`}
+                  actionLabel={`HOJEAR EN REVISTA (${paginationPlan.articlePageMap[featuredArticle.id]?.pageRangeLabel || 'PÁG. 04'}) →`}
+                  secondaryLink={{
+                    href: `/articulo/${featuredArticle.slug}`,
+                    label: 'Ver versión web ↗',
+                  }}
+                />
               </div>
-            </>
+            </div>
           )}
 
           {secondaryArticles.length > 0 && (
@@ -226,7 +246,16 @@ export default async function Issue({
               </div>
               <div className="issue-grid">
                 {secondaryArticles.map((article: any) => (
-                  <ArticleCard key={article.id} article={article} />
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                    href={`#historia-${article.slug}`}
+                    actionLabel={`HOJEAR EN REVISTA (${paginationPlan.articlePageMap[article.id]?.pageRangeLabel || 'PÁG. 06'}) →`}
+                    secondaryLink={{
+                      href: `/articulo/${article.slug}`,
+                      label: 'Ver versión web ↗',
+                    }}
+                  />
                 ))}
               </div>
             </>

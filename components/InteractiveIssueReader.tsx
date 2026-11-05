@@ -1,45 +1,22 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { extractEditorialVideo } from '@/lib/editorial-video';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   DEFAULT_ISSUE_DESIGN,
   type IssueDesignConfig,
   type SpreadLayoutStyle,
 } from '@/lib/issue-design-types';
+import {
+  buildIssuePaginationPlan,
+  getCleanImageUrl,
+  getPhotoCaption,
+  type IssueArticleItem,
+  type EditorialBlock,
+  type IssuePaginationPlan,
+} from '@/lib/issue-pagination';
 
-type IssueArticleItem = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt?: string | null;
-  body?: string | null;
-  category?: string | null;
-  city?: string | null;
-  author?: string | null;
-  cover_image?: string | null;
-  gallery_images?: string[] | null;
-  event_name?: string | null;
-  venue?: string | null;
-  people_tags?: string[] | null;
-};
-
-function getCleanImageUrl(raw: string | null | undefined): string {
-  if (!raw) return '';
-  const trimmed = String(raw).trim();
-  if (trimmed.includes(' | ')) return trimmed.split(' | ')[0].trim();
-  if (trimmed.includes('|')) return trimmed.split('|')[0].trim();
-  return trimmed;
-}
-
-function getPhotoCaption(raw: string | null | undefined): string {
-  if (!raw) return '';
-  const trimmed = String(raw).trim();
-  if (trimmed.includes(' | ')) return trimmed.split(' | ').slice(1).join(' | ').trim();
-  if (trimmed.includes('|')) return trimmed.split('|').slice(1).join('|').trim();
-  return '';
-}
+export type { IssueArticleItem };
 
 type IssueSponsorItem = {
   id: string;
@@ -87,16 +64,24 @@ export function InteractiveIssueReader({
   const touchStartY = useRef<number | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
 
-  const mergedDesign: IssueDesignConfig = {
-    ...DEFAULT_ISSUE_DESIGN,
-    ...design,
-    articleLayouts: design?.articleLayouts || {},
-  };
+  const mergedDesign: IssueDesignConfig = useMemo(() => {
+    return {
+      ...DEFAULT_ISSUE_DESIGN,
+      ...design,
+      articleLayouts: design?.articleLayouts || {},
+      articleFilters: design?.articleFilters || {},
+      articleFocalPoints: design?.articleFocalPoints || {},
+      articleCoverOverrides: design?.articleCoverOverrides || {},
+    };
+  }, [design]);
 
-  // Cada artículo ocupa 2 páginas individuales (izquierda visual + derecha crónica).
-  // Total páginas individuales = 2 (portada + carta) + 2 (sumario + sponsor) + (articles.length * 2) + 2 (colofón + contraportada)
-  const totalPages = Math.max(6, (articles.length + 3) * 2);
-  const totalSpreads = Math.ceil(totalPages / 2);
+  // Motor de paginación flexible: calcula pliegos dinámicos según extensión del contenido
+  const paginationPlan: IssuePaginationPlan = useMemo(() => {
+    return buildIssuePaginationPlan(articles, mergedDesign);
+  }, [articles, mergedDesign]);
+
+  const totalPages = paginationPlan.totalPages;
+  const totalSpreads = paginationPlan.totalSpreads;
   const desktopSpreadIndex = Math.floor(activePageIndex / 2);
 
   useEffect(() => {
@@ -118,6 +103,34 @@ export function InteractiveIssueReader({
     }
     setTimeout(() => setFlipDirection(null), 340);
   }
+
+  // Integración con sumario externo y enlaces hash (#historia-[slug] o #pagina-[num])
+  useEffect(() => {
+    function handleHash() {
+      if (typeof window === 'undefined') return;
+      const hash = window.location.hash;
+      if (!hash) return;
+
+      if (hash.startsWith('#historia-')) {
+        const slug = hash.replace('#historia-', '').trim();
+        const mapped = paginationPlan.articlePageMap[slug];
+        if (mapped) {
+          goToPage(mapped.startPage);
+          setIsOpen(true);
+        }
+      } else if (hash.startsWith('#pagina-')) {
+        const pageNum = parseInt(hash.replace('#pagina-', ''), 10);
+        if (!isNaN(pageNum) && pageNum >= 0 && pageNum < totalPages) {
+          goToPage(pageNum);
+          setIsOpen(true);
+        }
+      }
+    }
+
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [paginationPlan, totalPages]);
 
   function handleNext() {
     if (isMobile) {
@@ -188,28 +201,32 @@ export function InteractiveIssueReader({
     .slice(0, 3);
 
   function getPageLabel(pageIdx: number): string {
-    if (pageIdx === 0) return 'PORTADA';
-    if (pageIdx === 1) return 'CARTA EDITORIAL';
-    if (pageIdx === 2) return 'SUMARIO';
-    if (pageIdx === 3) return 'PATROCINADOR';
-    const articleBase = 4;
-    const lastArticlePage = articleBase + articles.length * 2;
-    if (pageIdx >= articleBase && pageIdx < lastArticlePage) {
-      const artIdx = Math.floor((pageIdx - articleBase) / 2);
-      const isLeft = (pageIdx - articleBase) % 2 === 0;
-      const art = articles[artIdx];
-      const name = art?.event_name || art?.title || `HISTORIA ${artIdx + 1}`;
+    const slotDef = paginationPlan.pages[pageIdx];
+    if (!slotDef) return `PÁG. ${pageIdx + 1}`;
+    if (slotDef.type === 'cover') return 'PORTADA';
+    if (slotDef.type === 'letter') return 'CARTA EDITORIAL';
+    if (slotDef.type === 'toc') return 'SUMARIO';
+    if (slotDef.type === 'sponsor') return 'PATROCINADOR';
+    if (slotDef.type === 'colophon') return 'COLOFÓN';
+    if (slotDef.type === 'backcover') return 'CONTRAPORTADA';
+    if (slotDef.type === 'article-page') {
+      const art = slotDef.article;
+      const name = art.event_name || art.title || 'HISTORIA';
       const shortName = name.length > 20 ? name.slice(0, 18) + '…' : name;
-      return isLeft ? `${shortName} · FOTO` : `${shortName} · CRÓNICA`;
+      const isLeft = slotDef.slot === 'left';
+      return isLeft
+        ? `${shortName} · PÁG. ${String(pageIdx).padStart(2, '0')}`
+        : `${shortName} · CRÓNICA`;
     }
-    if (pageIdx === totalPages - 2) return 'COLOFÓN';
-    if (pageIdx === totalPages - 1) return 'CONTRAPORTADA';
     return `PÁG. ${pageIdx + 1}`;
   }
 
   function renderPageContent(pageIdx: number, slot: 'left' | 'right' | 'single') {
+    const slotDef = paginationPlan.pages[pageIdx];
+    const pageNumFormatted = String(pageIdx).padStart(2, '0');
+
     // 0 = Portada Art
-    if (pageIdx === 0) {
+    if (pageIdx === 0 || slotDef?.type === 'cover') {
       return (
         <div className={`mag-page mag-page-cover-art ${slot === 'left' ? 'mag-page-left' : ''}`}>
           <div className="mag-cover-full">
@@ -249,7 +266,7 @@ export function InteractiveIssueReader({
     }
 
     // 1 = Carta Editorial
-    if (pageIdx === 1) {
+    if (pageIdx === 1 || slotDef?.type === 'letter') {
       return (
         <div className={`mag-page mag-page-cover-intro ${slot === 'right' ? 'mag-page-right' : ''}`}>
           <div className="mag-page-inner">
@@ -258,12 +275,12 @@ export function InteractiveIssueReader({
             </span>
             <h2>{mergedDesign.editorLetterTitle || issueTitle}</h2>
             <p>{mergedDesign.editorLetterBody}</p>
-            <div className="mag-signature" style={{ marginBottom: 24 }}>
-              <strong>
-                {mergedDesign.editorSignature || 'DIRECCIÓN EDITORIAL · GLAMORA'}
-              </strong>
-              <span>COCHABAMBA · BOLIVIA</span>
+
+            <div className="mag-editor-signature">
+              <span>{mergedDesign.editorSignature || 'DIRECCIÓN EDITORIAL'}</span>
+              <small>GLAMORA BOLIVIA</small>
             </div>
+
             <button
               type="button"
               className="mag-open-first-btn"
@@ -280,8 +297,8 @@ export function InteractiveIssueReader({
       );
     }
 
-    // 2 = Sumario (TOC)
-    if (pageIdx === 2) {
+    // 2 = Sumario (TOC) Dinámico
+    if (pageIdx === 2 || slotDef?.type === 'toc') {
       return (
         <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
           <div className="mag-page-inner">
@@ -290,18 +307,18 @@ export function InteractiveIssueReader({
             </span>
             <h3 className="mag-toc-title">En esta edición</h3>
             <ol className="mag-toc-list">
-              {articles.map((art, idx) => {
-                const pageNumber = (idx + 1) * 2 + 2;
-                const isCover = art.id === coverStoryId || idx === 0;
+              {paginationPlan.articlePlans.map((plan) => {
+                const art = plan.article;
+                const isCover = art.id === coverStoryId || plan.startPage === 4;
                 return (
                   <li key={art.id}>
                     <button
                       type="button"
                       className="mag-toc-row"
-                      onClick={() => goToPage(4 + idx * 2)}
+                      onClick={() => goToPage(plan.startPage)}
                     >
                       <span className="mag-toc-num">
-                        PÁG. {String(pageNumber).padStart(2, '0')}
+                        {plan.pageRangeLabel}
                       </span>
                       <div className="mag-toc-info">
                         <small>
@@ -331,8 +348,8 @@ export function InteractiveIssueReader({
       );
     }
 
-    // 3 = Patrocinador Oficial o Editorial Letter
-    if (pageIdx === 3) {
+    // 3 = Patrocinador Oficial o Editorial Standard
+    if (pageIdx === 3 || slotDef?.type === 'sponsor') {
       return (
         <div className={`mag-page ${slot === 'right' ? 'mag-page-right' : ''}`}>
           <div className="mag-page-inner mag-sponsor-or-letter">
@@ -368,7 +385,7 @@ export function InteractiveIssueReader({
                 <span className="mag-kicker">THE GLAMORA STANDARD</span>
                 <h3>Periodismo visual, moda, cultura y sociedad.</h3>
                 <p>
-                  Cada historia ha sido diagramada preservando la proporción fotográfica original y el rigor estético de nuestras coberturas de sociedad.
+                  Cada historia ha sido maquetada preservando íntegramente la crónica, la proporción fotográfica original y el rigor estético de nuestras coberturas de sociedad y moda contemporánea.
                 </p>
               </div>
             )}
@@ -381,28 +398,59 @@ export function InteractiveIssueReader({
       );
     }
 
-    // Páginas de historias (pageIdx 4 .. 4 + articles.length * 2 - 1)
-    const articleBase = 4;
-    const lastArticlePage = articleBase + articles.length * 2;
-    if (pageIdx >= articleBase && pageIdx < lastArticlePage) {
-      const artIdx = Math.floor((pageIdx - articleBase) / 2);
-      const isLeft = (pageIdx - articleBase) % 2 === 0;
-      const currentArticle = articles[artIdx];
-      const pageNumFormatted = String(pageIdx).padStart(2, '0');
-
-      // Limpieza exhaustiva de URLs de fotografía (evita URLs rotas por epígrafes 'url | caption')
-      const cleanGallery = (currentArticle.gallery_images || [])
-        .map(getCleanImageUrl)
-        .filter(Boolean);
-      const cleanCover = getCleanImageUrl(
-        mergedDesign?.articleCoverOverrides?.[currentArticle.id] || currentArticle.cover_image
+    // Colofón
+    if (pageIdx === totalPages - 2 || slotDef?.type === 'colophon') {
+      return (
+        <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+          <div className="mag-page-inner mag-colophon">
+            <span className="mag-kicker">COLOFÓN EDITORIAL</span>
+            <h3>GLAMORA · REVISTA DIGITAL</h3>
+            <p>
+              Cochabamba · La Paz · Santa Cruz · Oruro · Potosí · The World.
+              Todos los derechos reservados. Prohibida su reproducción o descarga parcial o total sin consentimiento expreso.
+            </p>
+            <div className="mag-colophon-links">
+              <Link href="/publicidad" onClick={() => setIsOpen(false)}>
+                ANUNCIAR EN LA PRÓXIMA EDICIÓN ↗
+              </Link>
+              <Link href="/ediciones" onClick={() => setIsOpen(false)}>
+                VER ARCHIVO DE EDICIONES ↗
+              </Link>
+            </div>
+          </div>
+          <footer className="mag-page-folio">
+            <span>PROPIEDAD INTELECTUAL RESERVADA</span>
+            <span>GLAMORA · PÁG. {pageNumFormatted}</span>
+          </footer>
+        </div>
       );
-      const primaryPhoto = cleanCover || cleanGallery[0] || '/brand/glamora-mark.png';
-      const secondaryPhoto =
-        cleanGallery.find((u) => u !== primaryPhoto) || cleanGallery[0] || primaryPhoto;
-      const tertiaryPhoto =
-        cleanGallery.filter((u) => u !== primaryPhoto && u !== secondaryPhoto)[0] ||
-        secondaryPhoto;
+    }
+
+    // Contraportada final
+    if (pageIdx === totalPages - 1 || slotDef?.type === 'backcover') {
+      return (
+        <div className={`mag-page mag-backcover ${slot === 'right' ? 'mag-page-right' : ''}`}>
+          <div className="mag-backcover-inner">
+            <span className="mag-backcover-monogram">G</span>
+            <strong>GLAMORA</strong>
+            <small>ESTILO · CULTURA · SOCIEDAD</small>
+            <button
+              type="button"
+              className="mag-open-first-btn mag-backcover-btn"
+              onClick={() => goToPage(0)}
+            >
+              ↺ VOLVER A LA PORTADA
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // PÁGINAS DE ARTÍCULOS (FLUJO FLEXIBLE MULTI-PLIEGO)
+    // ==========================================
+    if (slotDef && slotDef.type === 'article-page') {
+      const { article: currentArticle, spreadDescriptor, slot: pageSlot } = slotDef;
 
       const photoFilter = mergedDesign?.articleFilters?.[currentArticle.id] || 'natural';
       const focalPoint = mergedDesign?.articleFocalPoints?.[currentArticle.id] || 'center';
@@ -413,47 +461,33 @@ export function InteractiveIssueReader({
         mergedDesign.articleLayouts?.[currentArticle.slug] ||
         'vogue-classic';
 
-      // LADO IZQUIERDO: ARTE / FOTOGRAFÍA / COMPOSICIÓN EDITORIAL DE ALTA COSTURA
-      if (isLeft) {
-        // 1. Cinema Full Bleed
-        if (currentLayout === 'cinema-bleed') {
-          return (
-            <div className={`mag-page mag-page-cinema-dark ${slot === 'left' ? 'mag-page-left' : ''}`}>
-              <div className="mag-cinema-frame">
-                <img
-                  src={primaryPhoto}
-                  alt={currentArticle.title}
-                  draggable={false}
-                  className={filterStyleClass}
-                  style={{ objectPosition: focalPoint }}
-                />
-                <div className="mag-cinema-caption">
-                  <span>
-                    {[currentArticle.category, currentArticle.city]
-                      .filter(Boolean)
-                      .join(' · ')
-                      .toUpperCase()}
-                  </span>
-                  <h3>{currentArticle.title}</h3>
-                </div>
-              </div>
-              <footer className="mag-page-folio" style={{ color: '#c4b5a9' }}>
-                <span>PÁG. {pageNumFormatted}</span>
-                <span>GLAMORA · CINEMA SPREAD</span>
-              </footer>
-            </div>
-          );
-        }
+      const isCinemaRight = currentLayout === 'cinema-bleed';
+      const isLongTitle = (currentArticle.title || '').length > 55;
 
-        // 2. Glamora Asymmetric Spread (Doble fotografía noble y jerárquica)
-        if (currentLayout === 'vogue-asymmetric') {
-          return (
-            <div className={`mag-page mag-vogue-asym-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
-              <span className="mag-kicker">
-                GLAMORA SIGNATURE · {(currentArticle.city || 'BOLIVIA').toUpperCase()}
-              </span>
-              <div className="mag-vogue-asym-spread-stage">
-                <div className="mag-asym-hero-box">
+      // ==========================================
+      // LADO IZQUIERDO: VISUAL / FOTOGRÁFICO
+      // ==========================================
+      if (pageSlot === 'left') {
+        // A) PRIMER PLIEGO DE APERTURA: Ejecuta el layout seleccionado por el editor
+        if (spreadDescriptor.isFirstSpread) {
+          const primaryPhoto =
+            spreadDescriptor.leftPhotos[0]?.url ||
+            getCleanImageUrl(currentArticle.cover_image) ||
+            '/brand/glamora-mark.png';
+          const cleanGallery = (currentArticle.gallery_images || [])
+            .map(getCleanImageUrl)
+            .filter(Boolean);
+          const secondaryPhoto =
+            cleanGallery.find((u) => u !== primaryPhoto) || cleanGallery[0] || primaryPhoto;
+          const tertiaryPhoto =
+            cleanGallery.filter((u) => u !== primaryPhoto && u !== secondaryPhoto)[0] ||
+            secondaryPhoto;
+
+          // 1. Cinema Full Bleed
+          if (currentLayout === 'cinema-bleed') {
+            return (
+              <div className={`mag-page mag-page-cinema-dark ${slot === 'left' ? 'mag-page-left' : ''}`}>
+                <div className="mag-cinema-frame">
                   <img
                     src={primaryPhoto}
                     alt={currentArticle.title}
@@ -461,86 +495,153 @@ export function InteractiveIssueReader({
                     className={filterStyleClass}
                     style={{ objectPosition: focalPoint }}
                   />
-                  <span className="mag-asym-badge">01 · {(currentArticle.event_name || currentArticle.category || 'LOOK PRINCIPAL').toUpperCase()}</span>
+                  <div className="mag-cinema-caption">
+                    <span>
+                      {[currentArticle.category, currentArticle.city]
+                        .filter(Boolean)
+                        .join(' · ')
+                        .toUpperCase()}
+                    </span>
+                    <h3>{currentArticle.title}</h3>
+                  </div>
                 </div>
-                <div className="mag-asym-split-bottom">
-                  <div className="mag-asym-detail-photo">
+                <footer className="mag-page-folio" style={{ color: '#c4b5a9' }}>
+                  <span>PÁG. {pageNumFormatted}</span>
+                  <span>GLAMORA · CINEMA SPREAD</span>
+                </footer>
+              </div>
+            );
+          }
+
+          // 2. Glamora Asymmetric Spread
+          if (currentLayout === 'vogue-asymmetric') {
+            return (
+              <div className={`mag-page mag-vogue-asym-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+                <span className="mag-kicker">
+                  GLAMORA SIGNATURE · {(currentArticle.city || 'BOLIVIA').toUpperCase()}
+                </span>
+                <div className="mag-vogue-asym-spread-stage">
+                  <div className="mag-asym-hero-box">
                     <img
-                      src={secondaryPhoto}
-                      alt={`${currentArticle.title} detalle`}
+                      src={primaryPhoto}
+                      alt={currentArticle.title}
                       draggable={false}
                       className={filterStyleClass}
+                      style={{ objectPosition: focalPoint }}
                     />
-                    <small>02 · DETALLE</small>
+                    <span className="mag-asym-badge">01 · {(currentArticle.event_name || currentArticle.category || 'LOOK PRINCIPAL').toUpperCase()}</span>
                   </div>
-                  <div className="mag-asym-text-block">
-                    <strong>{(currentArticle.venue || currentArticle.author || 'ESENCIA EDITORIAL').toUpperCase()}</strong>
-                    <p>{currentArticle.excerpt ? `“${currentArticle.excerpt.slice(0, 130)}…”` : 'Crónica visual de alta moda y vida contemporánea.'}</p>
+                  <div className="mag-asym-split-bottom">
+                    <div className="mag-asym-detail-photo">
+                      <img
+                        src={secondaryPhoto}
+                        alt={`${currentArticle.title} detalle`}
+                        draggable={false}
+                        className={filterStyleClass}
+                      />
+                      <small>02 · DETALLE</small>
+                    </div>
+                    <div className="mag-asym-text-block">
+                      <strong>{(currentArticle.venue || currentArticle.author || 'ESENCIA EDITORIAL').toUpperCase()}</strong>
+                      <p>{currentArticle.excerpt ? `“${currentArticle.excerpt.slice(0, 130)}…”` : 'Crónica visual de alta moda y vida contemporánea.'}</p>
+                    </div>
                   </div>
                 </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  <span>GLAMORA · THE ASYMMETRIC EDIT</span>
+                </footer>
               </div>
-              <footer className="mag-page-folio">
-                <span>PÁG. {pageNumFormatted}</span>
-                <span>GLAMORA · THE ASYMMETRIC EDIT</span>
-              </footer>
-            </div>
-          );
-        }
+            );
+          }
 
-        // 3. Glamora Atelier Collage / Moodboard (Composición de 3 fotos sin tapar el sujeto)
-        if (currentLayout === 'vogue-collage') {
-          return (
-            <div className={`mag-page mag-envogue-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
-              <div className="mag-envogue-header">
-                <span className="mag-envogue-italic">The</span>
-                <strong className="mag-envogue-masthead">GLAMORA</strong>
-                <span className="mag-envogue-subtitle">ATELIER MOODBOARD · {(currentArticle.category || 'LOOK').toUpperCase()}</span>
+          // 3. Glamora Atelier Collage / Moodboard
+          if (currentLayout === 'vogue-collage') {
+            return (
+              <div className={`mag-page mag-envogue-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+                <div className="mag-envogue-header">
+                  <span className="mag-envogue-italic">The</span>
+                  <strong className="mag-envogue-masthead">GLAMORA</strong>
+                  <span className="mag-envogue-subtitle">ATELIER MOODBOARD · {(currentArticle.category || 'LOOK').toUpperCase()}</span>
+                </div>
+                <div className="mag-envogue-collage-stage">
+                  <div className="mag-envogue-center-hero">
+                    <img
+                      src={primaryPhoto}
+                      alt={currentArticle.title}
+                      draggable={false}
+                      className={filterStyleClass}
+                      style={{ objectPosition: focalPoint }}
+                    />
+                    <span className="mag-envogue-tag">
+                      01 · {(currentArticle.event_name || currentArticle.title).toUpperCase().slice(0, 32)}
+                    </span>
+                  </div>
+
+                  <div className="mag-envogue-bottom-strip">
+                    <div className="mag-envogue-detail-pill">
+                      <img src={secondaryPhoto} alt="Detalle 02" draggable={false} className={filterStyleClass} />
+                      <small>02 · ENCUADRE</small>
+                    </div>
+                    <div className="mag-envogue-detail-pill">
+                      <img src={tertiaryPhoto} alt="Detalle 03" draggable={false} className={filterStyleClass} />
+                      <small>03 · ATMÓSFERA</small>
+                    </div>
+                  </div>
+                </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  <span>MOODBOARD · {(currentArticle.event_name || currentArticle.title).toUpperCase().slice(0, 24)}</span>
+                </footer>
               </div>
-              <div className="mag-envogue-collage-stage">
-                <div className="mag-envogue-center-hero">
-                  <img
-                    src={primaryPhoto}
-                    alt={currentArticle.title}
-                    draggable={false}
-                    className={filterStyleClass}
-                    style={{ objectPosition: focalPoint }}
-                  />
-                  <span className="mag-envogue-tag">
-                    01 · {(currentArticle.event_name || currentArticle.title).toUpperCase().slice(0, 32)}
+            );
+          }
+
+          // 4. Glamora Social Mosaic
+          if (currentLayout === 'social-mosaic') {
+            return (
+              <div className={`mag-page mag-social-mosaic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+                <div className="mag-social-header-banner">
+                  <span className="mag-social-pill">GLAMORA SOCIAL</span>
+                  <span className="mag-social-venue">
+                    {(currentArticle.venue || currentArticle.city || 'BOLIVIA').toUpperCase()}
                   </span>
                 </div>
-
-                <div className="mag-envogue-bottom-strip">
-                  <div className="mag-envogue-detail-pill">
-                    <img src={secondaryPhoto} alt="Detalle 02" draggable={false} className={filterStyleClass} />
-                    <small>02 · ENCUADRE</small>
+                <div className="mag-social-mosaic-grid">
+                  <div className="mag-social-hero-box">
+                    <img
+                      src={primaryPhoto}
+                      alt={currentArticle.title}
+                      draggable={false}
+                      className={filterStyleClass}
+                      style={{ objectPosition: focalPoint }}
+                    />
+                    <span className="mag-social-tag">01 · AMBIENTE · {currentArticle.venue || currentArticle.title}</span>
                   </div>
-                  <div className="mag-envogue-detail-pill">
-                    <img src={tertiaryPhoto} alt="Detalle 03" draggable={false} className={filterStyleClass} />
-                    <small>03 · ATMÓSFERA</small>
+                  <div className="mag-social-duo-row">
+                    <div className="mag-social-duo-box">
+                      <img src={secondaryPhoto} alt="Momento 02" draggable={false} className={filterStyleClass} />
+                      <small>02 · COCTELERÍA &amp; SABOR</small>
+                    </div>
+                    <div className="mag-social-duo-box">
+                      <img src={tertiaryPhoto} alt="Momento 03" draggable={false} className={filterStyleClass} />
+                      <small>03 · MÚSICA &amp; ESCENA</small>
+                    </div>
                   </div>
                 </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  <span>GLAMORA SOCIAL · {(currentArticle.city || 'COCHABAMBA').toUpperCase()}</span>
+                </footer>
               </div>
-              <footer className="mag-page-folio">
-                <span>PÁG. {pageNumFormatted}</span>
-                <span>MOODBOARD · {(currentArticle.event_name || currentArticle.title).toUpperCase().slice(0, 24)}</span>
-              </footer>
-            </div>
-          );
-        }
+            );
+          }
 
-        // 4. Glamora Social Mosaic (Para coberturas y noches de gala)
-        if (currentLayout === 'social-mosaic') {
-          return (
-            <div className={`mag-page mag-social-mosaic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
-              <div className="mag-social-header-banner">
-                <span className="mag-social-pill">GLAMORA SOCIAL</span>
-                <span className="mag-social-venue">
-                  {(currentArticle.venue || currentArticle.city || 'BOLIVIA').toUpperCase()}
-                </span>
-              </div>
-              <div className="mag-social-mosaic-grid">
-                <div className="mag-social-hero-box">
+          // 5. Glamora Pull-Quote (Retrato de autor)
+          if (currentLayout === 'editorial-quote') {
+            return (
+              <div className={`mag-page mag-quote-spread-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+                <div className="mag-quote-portrait-plate">
                   <img
                     src={primaryPhoto}
                     alt={currentArticle.title}
@@ -548,32 +649,22 @@ export function InteractiveIssueReader({
                     className={filterStyleClass}
                     style={{ objectPosition: focalPoint }}
                   />
-                  <span className="mag-social-tag">01 · AMBIENTE &middot; {currentArticle.venue || currentArticle.title}</span>
-                </div>
-                <div className="mag-social-duo-row">
-                  <div className="mag-social-duo-box">
-                    <img src={secondaryPhoto} alt="Momento 02" draggable={false} className={filterStyleClass} />
-                    <small>02 · COCTELERÍA &amp; SABOR</small>
-                  </div>
-                  <div className="mag-social-duo-box">
-                    <img src={tertiaryPhoto} alt="Momento 03" draggable={false} className={filterStyleClass} />
-                    <small>03 · MÚSICA &amp; ESCENA</small>
+                  <div className="mag-quote-plate-badge">
+                    <span>ENTREVISTA DE AUTOR · VOZ EDITORIAL</span>
                   </div>
                 </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  <span>GLAMORA · DIÁLOGOS</span>
+                </footer>
               </div>
-              <footer className="mag-page-folio">
-                <span>PÁG. {pageNumFormatted}</span>
-                <span>GLAMORA SOCIAL · {(currentArticle.city || 'COCHABAMBA').toUpperCase()}</span>
-              </footer>
-            </div>
-          );
-        }
+            );
+          }
 
-        // 5. Glamora Pull-Quote (Retrato de autor / entrevista)
-        if (currentLayout === 'editorial-quote') {
+          // 6. Glamora Classic Fashion Plate (Lámina Noble a Página Completa)
           return (
-            <div className={`mag-page mag-quote-spread-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
-              <div className="mag-quote-portrait-plate">
+            <div className={`mag-page mag-vogue-classic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className="mag-classic-fashion-plate">
                 <img
                   src={primaryPhoto}
                   alt={currentArticle.title}
@@ -581,46 +672,282 @@ export function InteractiveIssueReader({
                   className={filterStyleClass}
                   style={{ objectPosition: focalPoint }}
                 />
-                <div className="mag-quote-plate-badge">
-                  <span>ENTREVISTA DE AUTOR &middot; VOZ EDITORIAL</span>
+                <div className="mag-plate-corner-tag">
+                  <span>{(currentArticle.category || 'ALTA MODA').toUpperCase()}</span>
+                  <span>{(currentArticle.city || 'BOLIVIA').toUpperCase()}</span>
                 </div>
               </div>
               <footer className="mag-page-folio">
                 <span>PÁG. {pageNumFormatted}</span>
-                <span>GLAMORA · DIÁLOGOS</span>
+                <span>GLAMORA · HAUTE ÉDITION</span>
               </footer>
             </div>
           );
         }
 
-        // 6. Glamora Classic Fashion Plate (Gran foto a página completa sin deformaciones)
-        return (
-          <div className={`mag-page mag-vogue-classic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
-            <div className="mag-classic-fashion-plate">
-              <img
-                src={primaryPhoto}
-                alt={currentArticle.title}
-                draggable={false}
-                className={filterStyleClass}
-                style={{ objectPosition: focalPoint }}
-              />
-              <div className="mag-plate-corner-tag">
-                <span>{(currentArticle.category || 'ALTA MODA').toUpperCase()}</span>
-                <span>{(currentArticle.city || 'BOLIVIA').toUpperCase()}</span>
+        // B) PLIEGOS DE CONTINUACIÓN: Galería Duo, Galería Single o Cita Monumental
+        if (spreadDescriptor.leftKind === 'gallery-duo') {
+          const photoA = spreadDescriptor.leftPhotos[0];
+          const photoB = spreadDescriptor.leftPhotos[1];
+          return (
+            <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className="mag-gallery-feature-plate">
+                <div className="mag-gallery-feature-header">
+                  <span>GLAMORA ARCHIVE · {(currentArticle.category || 'SOCIEDAD').toUpperCase()}</span>
+                  <small style={{ color: '#8f725f', letterSpacing: '.15em' }}>
+                    PLIEGO {spreadDescriptor.spreadIndexInArticle + 1} DE {spreadDescriptor.totalSpreadsInArticle}
+                  </small>
+                </div>
+                <div className="mag-gallery-duo-grid">
+                  <div className="mag-gallery-feature-frame">
+                    <img
+                      src={photoA?.url}
+                      alt={photoA?.caption || 'Detalle visual 1'}
+                      draggable={false}
+                      className={filterStyleClass}
+                      style={{ objectPosition: focalPoint }}
+                    />
+                    {photoA?.caption && (
+                      <span className="mag-gallery-duo-tag">{photoA.caption}</span>
+                    )}
+                  </div>
+                  {photoB && (
+                    <div className="mag-gallery-feature-frame">
+                      <img
+                        src={photoB?.url}
+                        alt={photoB?.caption || 'Detalle visual 2'}
+                        draggable={false}
+                        className={filterStyleClass}
+                        style={{ objectPosition: focalPoint }}
+                      />
+                      {photoB?.caption && (
+                        <span className="mag-gallery-duo-tag">{photoB.caption}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
+              <footer className="mag-page-folio">
+                <span>PÁG. {pageNumFormatted}</span>
+                <span>GLAMORA · GALERÍA DE AUTOR</span>
+              </footer>
+            </div>
+          );
+        }
+
+        if (spreadDescriptor.leftKind === 'gallery-single') {
+          const photo = spreadDescriptor.leftPhotos[0];
+          return (
+            <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className="mag-gallery-feature-plate">
+                <div className="mag-gallery-feature-header">
+                  <span>GLAMORA ARCHIVE · {(currentArticle.category || 'SOCIEDAD').toUpperCase()}</span>
+                  <small style={{ color: '#8f725f', letterSpacing: '.15em' }}>
+                    PLIEGO {spreadDescriptor.spreadIndexInArticle + 1} DE {spreadDescriptor.totalSpreadsInArticle}
+                  </small>
+                </div>
+                <div className="mag-gallery-feature-frame">
+                  <img
+                    src={photo?.url}
+                    alt={photo?.caption || `${currentArticle.title} detalle`}
+                    draggable={false}
+                    className={filterStyleClass}
+                    style={{ objectPosition: focalPoint }}
+                  />
+                </div>
+                {photo?.caption && (
+                  <p className="mag-gallery-feature-caption">
+                    {photo.caption}
+                  </p>
+                )}
+              </div>
+              <footer className="mag-page-folio">
+                <span>PÁG. {pageNumFormatted}</span>
+                <span>GLAMORA · GALERÍA EDITORIAL</span>
+              </footer>
+            </div>
+          );
+        }
+
+        // Cita Monumental de Pliego (Quote Plate)
+        const firstTextBlock = spreadDescriptor.rightBlocks.find(
+          (b) => b.type !== 'inline-image'
+        );
+        const quoteFallback =
+          firstTextBlock && 'text' in firstTextBlock
+            ? firstTextBlock.text.slice(0, 160)
+            : 'Elegancia, cultura contemporánea y crónica de autor.';
+
+        return (
+          <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+            <div className="mag-quote-feature-plate">
+              <blockquote>
+                {currentArticle.excerpt || quoteFallback}
+              </blockquote>
+              <cite>
+                — {(currentArticle.author || currentArticle.venue || 'GLAMORA EDITORIAL').toUpperCase()}
+              </cite>
             </div>
             <footer className="mag-page-folio">
               <span>PÁG. {pageNumFormatted}</span>
-              <span>GLAMORA · HAUTE ÉDITION</span>
+              <span>GLAMORA · CITA DESTACADA</span>
             </footer>
           </div>
         );
       }
 
-      // LADO DERECHO: CRÓNICA Y TITULARES TIPOGRÁFICOS DE REVISTA (CALIBRADOS SIN SCROLLBARS)
-      const isCinemaRight = currentLayout === 'cinema-bleed';
-      const isLongTitle = (currentArticle.title || '').length > 55;
+      // ==========================================
+      // LADO DERECHO: CRÓNICA TIPOGRÁFICA
+      // ==========================================
+      // A) PRIMER PLIEGO: APERTURA DE LA HISTORIA
+      if (spreadDescriptor.isFirstSpread) {
+        return (
+          <div
+            className={`mag-page mag-page-story ${
+              isCinemaRight ? 'mag-story-cinema' : ''
+            } ${slot === 'right' ? 'mag-page-right' : ''}`}
+          >
+            <div className="mag-page-inner">
+              <span
+                className="mag-kicker"
+                style={isCinemaRight ? { color: '#dfcfbe' } : {}}
+              >
+                {[
+                  currentArticle.id === coverStoryId ? 'COVER STORY' : null,
+                  currentArticle.category,
+                  currentArticle.city,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+                  .toUpperCase()}
+              </span>
 
+              <h3
+                className="mag-story-headline"
+                style={{
+                  fontSize: isLongTitle ? 'clamp(20px, 2.3vw, 29px)' : undefined,
+                  color: isCinemaRight ? '#fcfaf6' : undefined,
+                }}
+              >
+                {currentArticle.title}
+              </h3>
+
+              {currentArticle.author && (
+                <div
+                  className="mag-story-byline"
+                  style={isCinemaRight ? { color: '#baa89b' } : {}}
+                >
+                  POR {currentArticle.author.toUpperCase()}
+                </div>
+              )}
+
+              {currentArticle.excerpt && (
+                <p
+                  className="mag-pull-quote"
+                  style={
+                    isCinemaRight
+                      ? {
+                          background: 'rgba(255,255,255,0.06)',
+                          color: '#dfcfbe',
+                          borderColor: '#dfcfbe',
+                        }
+                      : {}
+                  }
+                >
+                  &ldquo;{currentArticle.excerpt}&rdquo;
+                </p>
+              )}
+
+              <div
+                className="mag-story-columns"
+                style={isCinemaRight ? { color: '#dfdcd7' } : {}}
+              >
+                {spreadDescriptor.rightBlocks.map((block: EditorialBlock, bIdx: number) => {
+                  if (block.type === 'heading') {
+                    return (
+                      <h4 key={bIdx} className="mag-story-subheading">
+                        {block.text}
+                      </h4>
+                    );
+                  }
+                  if (block.type === 'quote') {
+                    return (
+                      <blockquote key={bIdx} className="mag-story-quote-callout">
+                        &ldquo;{block.text}&rdquo;
+                      </blockquote>
+                    );
+                  }
+                  if (block.type === 'inline-image') {
+                    return (
+                      <figure key={bIdx} className="mag-inline-photo-box">
+                        <img
+                          src={block.url}
+                          alt={block.caption || 'Fotografía editorial'}
+                          draggable={false}
+                          className={filterStyleClass}
+                        />
+                        {block.caption && (
+                          <figcaption className="mag-inline-photo-caption">
+                            {block.caption}
+                          </figcaption>
+                        )}
+                      </figure>
+                    );
+                  }
+                  return (
+                    <p key={bIdx} className={bIdx === 0 ? 'mag-story-dropcap' : ''}>
+                      {block.text}
+                    </p>
+                  );
+                })}
+              </div>
+
+              {/* Si es el único pliego, muestra los protagonistas y cierre */}
+              {!spreadDescriptor.hasMoreAfter && (
+                <>
+                  {Array.isArray(currentArticle.people_tags) &&
+                    currentArticle.people_tags.filter(Boolean).length > 0 && (
+                      <div
+                        className="mag-story-people"
+                        style={isCinemaRight ? { color: '#baa89b' } : {}}
+                      >
+                        <span>PROTAGONISTAS: </span>
+                        {currentArticle.people_tags.filter(Boolean).slice(0, 5).join(' · ')}
+                      </div>
+                    )}
+                  <div className="mag-story-end-signoff">
+                    <span>GLAMORA EDITORIAL</span>
+                    <small>FIN DE LA HISTORIA ❖</small>
+                  </div>
+                </>
+              )}
+
+              {/* Si continúa en el pliego siguiente, muestra el pase de página editorial */}
+              {spreadDescriptor.hasMoreAfter && (
+                <div className="mag-story-continuation-cue">
+                  <button
+                    type="button"
+                    onClick={() => goToPage(spreadDescriptor.rightPageNumber + 1)}
+                    className="mag-story-next-page-btn"
+                  >
+                    CONTINÚA EN LA PÁGINA SIGUIENTE (PÁG. {String(spreadDescriptor.rightPageNumber + 1).padStart(2, '0')}) →
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <footer
+              className="mag-page-folio"
+              style={isCinemaRight ? { color: '#baa89b' } : {}}
+            >
+              <span>GLAMORA · {issueTitle.toUpperCase()}</span>
+              <span>PÁG. {pageNumFormatted}</span>
+            </footer>
+          </div>
+        );
+      }
+
+      // B) PLIEGOS DE CONTINUACIÓN: DESARROLLO Y CONCLUSIÓN DE LA CRÓNICA
       return (
         <div
           className={`mag-page mag-page-story ${
@@ -628,100 +955,85 @@ export function InteractiveIssueReader({
           } ${slot === 'right' ? 'mag-page-right' : ''}`}
         >
           <div className="mag-page-inner">
-            <span
-              className="mag-kicker"
-              style={isCinemaRight ? { color: '#dfcfbe' } : {}}
-            >
-              {[
-                currentArticle.id === coverStoryId ? 'COVER STORY' : null,
-                currentArticle.category,
-                currentArticle.city,
-              ]
-                .filter(Boolean)
-                .join(' · ')
-                .toUpperCase()}
+            <span className="mag-continuation-kicker">
+              CONTINUACIÓN · {(currentArticle.category || 'CRÓNICA').toUpperCase()}
             </span>
-
-            <h3
-              className="mag-story-headline"
-              style={{
-                fontSize: isLongTitle ? 'clamp(20px, 2.3vw, 29px)' : undefined,
-                color: isCinemaRight ? '#fcfaf6' : undefined,
-              }}
-            >
+            <h4 className="mag-continuation-headline">
               {currentArticle.title}
-            </h3>
-
-            {currentArticle.author && (
-              <div
-                className="mag-story-byline"
-                style={isCinemaRight ? { color: '#baa89b' } : {}}
-              >
-                POR {currentArticle.author.toUpperCase()}
-              </div>
-            )}
-
-            {currentArticle.excerpt && (
-              <p
-                className="mag-pull-quote"
-                style={
-                  isCinemaRight
-                    ? {
-                        background: 'rgba(255,255,255,0.06)',
-                        color: '#dfcfbe',
-                        borderColor: '#dfcfbe',
-                      }
-                    : {}
-                }
-              >
-                &ldquo;{currentArticle.excerpt}&rdquo;
-              </p>
-            )}
+            </h4>
 
             <div
               className="mag-story-columns"
               style={isCinemaRight ? { color: '#dfdcd7' } : {}}
             >
-              {extractEditorialVideo(currentArticle.body || '')
-                .cleanBody.replace(/\[IMAGEN:[^\]]+\]/gi, '')
-                .split(/\n\s*\n/)
-                .map((p: string) =>
-                  p.replace(/^##\s+/, '').replace(/^>\s+/, '').trim()
-                )
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((para: string, pIdx: number) => (
-                  <p key={pIdx} className={pIdx === 0 ? 'mag-story-dropcap' : ''}>
-                    {para}
-                  </p>
-                ))}
-            </div>
-
-            {Array.isArray(currentArticle.people_tags) &&
-              currentArticle.people_tags.filter(Boolean).length > 0 && (
-                <div
-                  className="mag-story-people"
-                  style={isCinemaRight ? { color: '#baa89b' } : {}}
-                >
-                  <span>PROTAGONISTAS: </span>
-                  {currentArticle.people_tags.filter(Boolean).slice(0, 5).join(' · ')}
-                </div>
-              )}
-
-            <div className="mag-story-cta-wrap">
-              <Link
-                href={`/articulo/${currentArticle.slug}`}
-                className="mag-story-read-link"
-                style={
-                  isCinemaRight
-                    ? { background: '#dfcfbe', color: '#17151a', borderColor: '#dfcfbe' }
-                    : {}
+              {spreadDescriptor.rightBlocks.map((block: EditorialBlock, bIdx: number) => {
+                if (block.type === 'heading') {
+                  return (
+                    <h4 key={bIdx} className="mag-story-subheading">
+                      {block.text}
+                    </h4>
+                  );
                 }
-                onClick={() => setIsOpen(false)}
-              >
-                LEER NOTA Y GALERÍA COMPLETA ↗
-              </Link>
+                if (block.type === 'quote') {
+                  return (
+                    <blockquote key={bIdx} className="mag-story-quote-callout">
+                      &ldquo;{block.text}&rdquo;
+                    </blockquote>
+                  );
+                }
+                if (block.type === 'inline-image') {
+                  return (
+                    <figure key={bIdx} className="mag-inline-photo-box">
+                      <img
+                        src={block.url}
+                        alt={block.caption || 'Fotografía editorial'}
+                        draggable={false}
+                        className={filterStyleClass}
+                      />
+                      {block.caption && (
+                        <figcaption className="mag-inline-photo-caption">
+                          {block.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  );
+                }
+                return <p key={bIdx}>{block.text}</p>;
+              })}
             </div>
+
+            {/* Protagonistas y firma editorial al concluir */}
+            {spreadDescriptor.isLastSpread && (
+              <>
+                {Array.isArray(currentArticle.people_tags) &&
+                  currentArticle.people_tags.filter(Boolean).length > 0 && (
+                    <div
+                      className="mag-story-people"
+                      style={isCinemaRight ? { color: '#baa89b' } : {}}
+                    >
+                      <span>PROTAGONISTAS: </span>
+                      {currentArticle.people_tags.filter(Boolean).slice(0, 5).join(' · ')}
+                    </div>
+                  )}
+                <div className="mag-story-end-signoff">
+                  <span>GLAMORA EDITORIAL</span>
+                  <small>FIN DE LA HISTORIA ❖</small>
+                </div>
+              </>
+            )}
+
+            {/* Si aún continúa en un pliego adicional */}
+            {spreadDescriptor.hasMoreAfter && (
+              <div className="mag-story-continuation-cue">
+                <button
+                  type="button"
+                  onClick={() => goToPage(spreadDescriptor.rightPageNumber + 1)}
+                  className="mag-story-next-page-btn"
+                >
+                  CONTINÚA EN LA PÁGINA SIGUIENTE (PÁG. {String(spreadDescriptor.rightPageNumber + 1).padStart(2, '0')}) →
+                </button>
+              </div>
+            )}
           </div>
 
           <footer
@@ -735,51 +1047,7 @@ export function InteractiveIssueReader({
       );
     }
 
-    // Colofón
-    if (pageIdx === totalPages - 2) {
-      return (
-        <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
-          <div className="mag-page-inner mag-colophon">
-            <span className="mag-kicker">COLOFÓN EDITORIAL</span>
-            <h3>GLAMORA · REVISTA DIGITAL</h3>
-            <p>
-              Cochabamba · La Paz · Santa Cruz · Oruro · Potosí · The World.
-              Todos los derechos reservados. Prohibida su reproducción o descarga parcial o total.
-            </p>
-            <div className="mag-colophon-links">
-              <Link href="/publicidad" onClick={() => setIsOpen(false)}>
-                ANUNCIAR EN LA PRÓXIMA EDICIÓN ↗
-              </Link>
-              <Link href="/ediciones" onClick={() => setIsOpen(false)}>
-                VER ARCHIVO DE EDICIONES ↗
-              </Link>
-            </div>
-          </div>
-          <footer className="mag-page-folio">
-            <span>PROPIEDAD INTELECTUAL RESERVADA</span>
-            <span>GLAMORA</span>
-          </footer>
-        </div>
-      );
-    }
-
-    // Contraportada final
-    return (
-      <div className={`mag-page mag-backcover ${slot === 'right' ? 'mag-page-right' : ''}`}>
-        <div className="mag-backcover-inner">
-          <span className="mag-backcover-monogram">G</span>
-          <strong>GLAMORA</strong>
-          <small>ESTILO · CULTURA · SOCIEDAD</small>
-          <button
-            type="button"
-            className="mag-open-first-btn mag-backcover-btn"
-            onClick={() => goToPage(0)}
-          >
-            ↺ VOLVER A LA PORTADA
-          </button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -972,7 +1240,7 @@ export function InteractiveIssueReader({
                         ? 'SUMARIO'
                         : idx === totalSpreads - 1
                           ? 'CIERRE'
-                          : `PÁG ${(idx - 1) * 2 + 2}-${(idx - 1) * 2 + 3}`;
+                          : `PÁG. ${String(idx * 2).padStart(2, '0')}–${String(idx * 2 + 1).padStart(2, '0')}`;
                   const isActive = desktopSpreadIndex === idx;
                   return (
                     <button

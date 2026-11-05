@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node scripts/test-issue-pagination.cjs",
+    "test:issues": "node scripts/test-issue-pagination.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
