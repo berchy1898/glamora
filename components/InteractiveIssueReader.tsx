@@ -75,10 +75,96 @@ export function InteractiveIssueReader({
   const [isMobile, setIsMobile] = useState(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
   const [showPrintGuides, setShowPrintGuides] = useState(false);
+  const [paperSoundEnabled, setPaperSoundEnabled] = useState(true);
+  const [loupeActive, setLoupeActive] = useState(false);
+  const [loupePos, setLoupePos] = useState<{ x: number; y: number; bgX: number; bgY: number; imgUrl: string } | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+
+  function playPaperTurnSound() {
+    if (!paperSoundEnabled || typeof window === 'undefined') return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const bufferSize = Math.floor(ctx.sampleRate * 0.16);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        const decay = Math.exp(-i / (ctx.sampleRate * 0.038));
+        data[i] = (Math.random() * 2 - 1) * decay;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 1350;
+      filter.Q.value = 1.1;
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.24, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      noise.start();
+    } catch {
+      // Audio autoplay policy fallback
+    }
+  }
+
+  function toggleFullscreen() {
+    if (typeof document === 'undefined') return;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.().catch(() => {});
+      setIsFullscreen(false);
+    }
+  }
+
+  useEffect(() => {
+    function handleFsChange() {
+      if (typeof document === 'undefined') return;
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    }
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  function handleStageMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (!loupeActive) {
+      if (loupePos) setLoupePos(null);
+      return;
+    }
+    const target = e.target as HTMLElement;
+    if (target && target.tagName === 'IMG') {
+      const img = target as HTMLImageElement;
+      const rect = img.getBoundingClientRect();
+
+      const relX = e.clientX - rect.left;
+      const relY = e.clientY - rect.top;
+      const pctX = (relX / rect.width) * 100;
+      const pctY = (relY / rect.height) * 100;
+
+      setLoupePos({
+        x: e.clientX,
+        y: e.clientY,
+        bgX: pctX,
+        bgY: pctY,
+        imgUrl: img.src,
+      });
+    } else {
+      if (loupePos) setLoupePos(null);
+    }
+  }
 
   const mergedDesign: IssueDesignConfig = useMemo(() => {
     return {
@@ -113,6 +199,7 @@ export function InteractiveIssueReader({
   function goToPage(target: number) {
     const clamped = Math.max(0, Math.min(totalPages - 1, target));
     if (clamped === activePageIndex) return;
+    playPaperTurnSound();
     setFlipDirection(clamped > activePageIndex ? 'next' : 'prev');
     setActivePageIndex(clamped);
     if (stageRef.current) {
@@ -174,6 +261,9 @@ export function InteractiveIssueReader({
       if (e.key === 'Escape') setIsOpen(false);
       if (e.key === 'ArrowRight') handleNext();
       if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'l' || e.key === 'L') setLoupeActive((prev) => !prev);
+      if (e.key === 'm' || e.key === 'M') setPaperSoundEnabled((prev) => !prev);
     }
 
     window.addEventListener('keydown', handleKey);
@@ -1483,6 +1573,33 @@ export function InteractiveIssueReader({
               )}
               <button
                 type="button"
+                className={`mag-reader-top-btn ${paperSoundEnabled ? 'mag-reader-btn-active' : ''}`}
+                onClick={() => setPaperSoundEnabled((prev) => !prev)}
+                title="Conmutar sonido de paso de página en papel seda de revista (tecla M)"
+              >
+                {paperSoundEnabled ? '🔊 PAPEL' : '🔇 SILENCIO'}
+              </button>
+              <button
+                type="button"
+                className={`mag-reader-top-btn ${loupeActive ? 'mag-reader-btn-active' : ''}`}
+                onClick={() => {
+                  setLoupeActive((prev) => !prev);
+                  if (loupeActive) setLoupePos(null);
+                }}
+                title="Lupa editorial macro para examinar texturas, joyas y detalles (tecla L)"
+              >
+                🔍 LUPA {loupeActive ? '● ON' : '○ OFF'}
+              </button>
+              <button
+                type="button"
+                className={`mag-reader-top-btn ${isFullscreen ? 'mag-reader-btn-active' : ''}`}
+                onClick={toggleFullscreen}
+                title="Modo Inmersivo en Pantalla Completa (tecla F)"
+              >
+                {isFullscreen ? '⛶ SALIR' : '⛶ PANTALLA COMPLETA'}
+              </button>
+              <button
+                type="button"
                 className="mag-reader-top-btn"
                 onClick={() => goToPage(0)}
               >
@@ -1507,7 +1624,12 @@ export function InteractiveIssueReader({
           </header>
 
           {/* Escenario central */}
-          <div className="mag-reader-stage" ref={stageRef}>
+          <div
+            className="mag-reader-stage"
+            ref={stageRef}
+            onMouseMove={handleStageMouseMove}
+            onMouseLeave={() => setLoupePos(null)}
+          >
             <button
               type="button"
               className="mag-reader-side-arrow mag-reader-side-prev"
@@ -1656,6 +1778,62 @@ export function InteractiveIssueReader({
               SIGUIENTE ›
             </button>
           </footer>
+
+          {/* Lupa Editorial Macro */}
+          {loupeActive && loupePos && (
+            <div
+              className="mag-editorial-loupe"
+              style={{
+                position: 'fixed',
+                left: loupePos.x - 85,
+                top: loupePos.y - 85,
+                width: 170,
+                height: 170,
+                borderRadius: '50%',
+                border: '2.5px solid #dfba73',
+                boxShadow: '0 14px 40px rgba(0,0,0,0.65), inset 0 0 14px rgba(0,0,0,0.4)',
+                backgroundImage: `url(${loupePos.imgUrl})`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: `${loupePos.bgX}% ${loupePos.bgY}%`,
+                backgroundSize: '290%',
+                pointerEvents: 'none',
+                zIndex: 99999,
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  pointerEvents: 'none',
+                }}
+              >
+                <div style={{ width: 12, height: 1, background: 'rgba(223, 186, 115, 0.8)' }} />
+                <div style={{ height: 12, width: 1, background: 'rgba(223, 186, 115, 0.8)', position: 'absolute' }} />
+              </div>
+              <span
+                style={{
+                  position: 'absolute',
+                  bottom: 8,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: 'rgba(24, 20, 28, 0.9)',
+                  color: '#dfba73',
+                  fontSize: '8px',
+                  letterSpacing: '0.14em',
+                  padding: '2px 7px',
+                  borderRadius: '2px',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                2.5× MACRO
+              </span>
+            </div>
+          )}
         </div>
       )}
     </>

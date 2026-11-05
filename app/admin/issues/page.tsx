@@ -24,6 +24,8 @@ import {
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
 import { EditorialImageCropperModal } from '@/components/EditorialImageCropperModal';
 import { EditorialDarkroomModal } from '@/components/EditorialDarkroomModal';
+import { EditorialPrintPreflightModal } from '@/components/EditorialPrintPreflightModal';
+import { ATELIER_PNG_CATALOG, type AtelierCatalogCategory, type AtelierCatalogItem } from '@/lib/fashion-png-catalog';
 import { type PhotoAdjustments } from '@/lib/photo-adjustments';
 import { buildIssuePaginationPlan } from '@/lib/issue-pagination';
 
@@ -172,6 +174,9 @@ export default function IssueBuilder() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [preflightModalOpen, setPreflightModalOpen] = useState(false);
+  const [atelierCatalogTargetArticleId, setAtelierCatalogTargetArticleId] = useState<string | null>(null);
+  const [atelierCategoryFilter, setAtelierCategoryFilter] = useState<string>('todos');
 
   // Configuración avanzada de maquetación (GLAMORA ISSUE DESIGN STUDIO)
   const [allDesigns, setAllDesigns] = useState<Record<string, IssueDesignConfig>>({});
@@ -487,6 +492,30 @@ export default function IssueBuilder() {
         [field]: value,
       },
     }));
+  }
+
+  function addCatalogItemToWishlist(articleId: string, item: AtelierCatalogItem) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => {
+      const existing = prev.articleWishlistItems?.[articleId] || [];
+      const newItem: FashionWishlistItem = {
+        id: 'w-cat-' + item.id + '-' + Date.now(),
+        pngUrl: item.pngUrl,
+        brand: item.brand,
+        item: item.item,
+        price: item.price,
+      };
+      const updated = [...existing, newItem];
+      return {
+        ...prev,
+        articleWishlistItems: {
+          ...(prev.articleWishlistItems || {}),
+          [articleId]: updated,
+          ...(art?.slug ? { [art.slug]: updated } : {}),
+        },
+      };
+    });
+    setMessage(`Se añadió "${item.item}" al bodegón de la historia.`);
   }
 
   function removeSelectedCover() {
@@ -1669,20 +1698,40 @@ export default function IssueBuilder() {
                                     Añade piezas, accesorios o calzado en PNG transparente para exhibirlos flotando con precios en la página izquierda.
                                   </p>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => addWishlistItem(articleId)}
-                                  className="text-link"
-                                  style={{
-                                    fontSize: 11,
-                                    padding: '5px 10px',
-                                    background: '#f5efe8',
-                                    border: '1px solid #d4c5b9',
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  + AÑADIR PIEZA PNG
-                                </button>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setAtelierCatalogTargetArticleId(articleId)}
+                                    style={{
+                                      fontSize: 11,
+                                      padding: '6px 12px',
+                                      background: '#191520',
+                                      color: '#dfba73',
+                                      border: '1px solid rgba(212, 175, 55, 0.4)',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 6,
+                                    }}
+                                  >
+                                    <span>📚</span> CATÁLOGO DE ATELIER (PNG)
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => addWishlistItem(articleId)}
+                                    className="text-link"
+                                    style={{
+                                      fontSize: 11,
+                                      padding: '5px 10px',
+                                      background: '#f5efe8',
+                                      border: '1px solid #d4c5b9',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    + AÑADIR PIEZA MANUAL
+                                  </button>
+                                </div>
                               </div>
 
                               {(!design.articleWishlistItems?.[articleId] ||
@@ -1823,6 +1872,23 @@ export default function IssueBuilder() {
                 }}
               >
                 👁️ PREVISUALIZAR REVISTA EN VIVO
+              </button>
+
+              <button
+                type="button"
+                className="button-primary"
+                disabled={!chosen.length}
+                onClick={() => setPreflightModalOpen(true)}
+                style={{
+                  background: '#711c32',
+                  borderColor: '#711c32',
+                  color: '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>🖨️</span> PREFLIGHT DE IMPRESIÓN (213 × 276 MM)
               </button>
 
               {editingId && (
@@ -1988,6 +2054,204 @@ export default function IssueBuilder() {
               setArticlePhotoAdjustments(darkroomTarget.articleId, filter, adjustments);
             }}
             onClose={() => setDarkroomTarget(null)}
+          />
+        )}
+
+        {/* MODAL / DRAWER CATÁLOGO DE ATELIER PNG */}
+        {atelierCatalogTargetArticleId && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: 'rgba(10, 8, 14, 0.85)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 20,
+              boxSizing: 'border-box',
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setAtelierCatalogTargetArticleId(null);
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                maxWidth: 900,
+                maxHeight: '88vh',
+                background: '#fbf8f4',
+                border: '1px solid #d4c5b9',
+                boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  padding: '16px 22px',
+                  background: '#191520',
+                  color: '#fff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid rgba(212, 175, 55, 0.3)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontFamily: "'Didot', 'Playfair Display', serif", fontSize: 17, color: '#dfba73', fontWeight: 700 }}>
+                    CATÁLOGO DE ATELIER &amp; BODEGÓN PNG
+                  </span>
+                  <small style={{ fontSize: 9, letterSpacing: '0.15em', background: '#711c32', padding: '2px 8px', color: '#fff', textTransform: 'uppercase' }}>
+                    TRANSPARENCIAS HAUTE COUTURE
+                  </small>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAtelierCatalogTargetArticleId(null)}
+                  style={{ background: 'none', border: 'none', color: '#dfba73', fontSize: 20, cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Categorías */}
+              <div style={{ display: 'flex', gap: 8, padding: '12px 22px', background: '#f0eae2', borderBottom: '1px solid #dfd5ca', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'todos', label: 'TODAS LAS PIEZAS' },
+                  { id: 'bolsos', label: '👜 BOLSOS' },
+                  { id: 'joyeria', label: '💍 JOYERÍA' },
+                  { id: 'calzado', label: '👠 CALZADO' },
+                  { id: 'sastreria', label: '🧥 ALTA COSTURA' },
+                  { id: 'accesorios', label: '🕶️ ACCESORIOS' },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setAtelierCategoryFilter(cat.id)}
+                    style={{
+                      padding: '5px 12px',
+                      background: atelierCategoryFilter === cat.id ? '#711c32' : '#ffffff',
+                      color: atelierCategoryFilter === cat.id ? '#ffffff' : '#4a3f3a',
+                      border: '1px solid',
+                      borderColor: atelierCategoryFilter === cat.id ? '#711c32' : '#d8cec4',
+                      fontSize: 10.5,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Cuadrícula de Prendas */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
+                  {ATELIER_PNG_CATALOG.filter(
+                    (item) => atelierCategoryFilter === 'todos' || item.category === atelierCategoryFilter
+                  ).map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #e2d7cc',
+                        padding: 14,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: 10,
+                        transition: 'box-shadow 0.2s ease',
+                      }}
+                    >
+                      <div style={{ width: '100%', height: 130, background: '#faf8f5', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, boxSizing: 'border-box' }}>
+                        <img
+                          src={item.pngUrl}
+                          alt={item.item}
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 12px rgba(0,0,0,0.12))' }}
+                        />
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <strong style={{ fontSize: 11, letterSpacing: '0.12em', color: '#711c32', textTransform: 'uppercase' }}>
+                            {item.brand}
+                          </strong>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#18141c', background: '#f6f0e8', padding: '1px 5px' }}>
+                            {item.price}
+                          </span>
+                        </div>
+                        <h4 style={{ fontSize: 12, margin: '4px 0 2px 0', color: '#18141c', fontFamily: "'Didot', Georgia, serif" }}>
+                          {item.item}
+                        </h4>
+                        <p style={{ fontSize: 10, color: '#6e645f', margin: 0, lineHeight: 1.3 }}>
+                          {item.description}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (atelierCatalogTargetArticleId) {
+                            addCatalogItemToWishlist(atelierCatalogTargetArticleId, item);
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          background: '#191520',
+                          color: '#dfba73',
+                          border: 'none',
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          letterSpacing: '0.1em',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                        }}
+                      >
+                        + AÑADIR AL PLIEGO
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ padding: '12px 22px', background: '#f5efe8', borderTop: '1px solid #dfd5ca', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#70645e' }}>
+                  Selecciona una o más piezas para exhibirlas con transparencias en el pliego izquierdo de la historia.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAtelierCatalogTargetArticleId(null)}
+                  style={{ padding: '6px 14px', background: '#711c32', color: '#fff', border: 'none', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                >
+                  LISTO
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL PREFLIGHT DE IMPRESIÓN */}
+        {preflightModalOpen && (
+          <EditorialPrintPreflightModal
+            isOpen={true}
+            onClose={() => setPreflightModalOpen(false)}
+            issueTitle={title || 'GLAMORA MAGAZINE'}
+            issueNumber={number || '01'}
+            coverImage={coverPreview || cover || undefined}
+            articles={chosenArticleObjects}
+            paginationPlan={paginationPlan}
+            design={design}
           />
         )}
       </div>

@@ -5943,7 +5943,8 @@ body {
   font-weight: 700;
 }
 
-.mag-reader-guide-active {
+.mag-reader-guide-active,
+.mag-reader-btn-active {
   background: #711c32 !important;
   color: #dfba73 !important;
   border-color: #dfba73 !important;
@@ -6280,4 +6281,60 @@ body {
   font-size: 8.5px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+/* ==========================================================================
+   GLAMORA STUDIO — PREPRESS PRINT MEDIA RULES
+   Formato Internacional Haute Couture (426 × 276 mm + 3mm bleed = 432 × 282 mm)
+   ========================================================================== */
+@media print {
+  @page {
+    size: 432mm 282mm;
+    margin: 0;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ocultar elementos no imprimibles */
+  .mag-reader-topbar,
+  .mag-reader-bottombar,
+  .mag-reader-side-arrow,
+  .mag-editorial-loupe,
+  header,
+  nav,
+  footer:not(.mag-page-folio) {
+    display: none !important;
+  }
+
+  .mag-reader-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .mag-reader-stage {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .mag-desktop-spread-view {
+    width: 426mm !important;
+    height: 276mm !important;
+    box-shadow: none !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  .mag-page {
+    width: 213mm !important;
+    height: 276mm !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+  }
 }
