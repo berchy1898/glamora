@@ -245,41 +245,49 @@ export default function IssueBuilder() {
   }
 
   function setArticleSpreadLayout(articleId: string, layout: SpreadLayoutStyle) {
+    const art = articles.find((a) => a.id === articleId);
     setDesign((prev) => ({
       ...prev,
       articleLayouts: {
         ...(prev.articleLayouts || {}),
         [articleId]: layout,
+        ...(art?.slug ? { [art.slug]: layout } : {}),
       },
     }));
   }
 
   function setArticleEditorialFilter(articleId: string, filter: PhotoEditorialFilter) {
+    const art = articles.find((a) => a.id === articleId);
     setDesign((prev) => ({
       ...prev,
       articleFilters: {
         ...(prev.articleFilters || {}),
         [articleId]: filter,
+        ...(art?.slug ? { [art.slug]: filter } : {}),
       },
     }));
   }
 
   function setArticleFocalPoint(articleId: string, focal: PhotoFocalPoint) {
+    const art = articles.find((a) => a.id === articleId);
     setDesign((prev) => ({
       ...prev,
       articleFocalPoints: {
         ...(prev.articleFocalPoints || {}),
         [articleId]: focal,
+        ...(art?.slug ? { [art.slug]: focal } : {}),
       },
     }));
   }
 
   function setArticleCoverOverride(articleId: string, photoUrl: string) {
+    const art = articles.find((a) => a.id === articleId);
     setDesign((prev) => ({
       ...prev,
       articleCoverOverrides: {
         ...(prev.articleCoverOverrides || {}),
         [articleId]: photoUrl,
+        ...(art?.slug ? { [art.slug]: photoUrl } : {}),
       },
     }));
   }
@@ -778,6 +786,7 @@ export default function IssueBuilder() {
                   articles={chosenArticleObjects}
                   sponsors={sponsors}
                   design={design}
+                  allowPrintGuides={true}
                 />
               </div>
             </div>
@@ -1415,6 +1424,7 @@ export default function IssueBuilder() {
                   .filter(Boolean) as any}
                 sponsors={sponsors}
                 design={design}
+                allowPrintGuides={true}
               />
             </div>
           </div>

@@ -36,6 +36,7 @@ type InteractiveIssueReaderProps = {
   sponsors?: IssueSponsorItem[];
   design?: IssueDesignConfig;
   defaultOpen?: boolean;
+  allowPrintGuides?: boolean;
 };
 
 const PALETTE_COLOR: Record<string, string> = {
@@ -54,11 +55,13 @@ export function InteractiveIssueReader({
   sponsors = [],
   design = DEFAULT_ISSUE_DESIGN,
   defaultOpen = false,
+  allowPrintGuides = false,
 }: InteractiveIssueReaderProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [activePageIndex, setActivePageIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [flipDirection, setFlipDirection] = useState<'next' | 'prev' | null>(null);
+  const [showPrintGuides, setShowPrintGuides] = useState(false);
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -224,11 +227,12 @@ export function InteractiveIssueReader({
   function renderPageContent(pageIdx: number, slot: 'left' | 'right' | 'single') {
     const slotDef = paginationPlan.pages[pageIdx];
     const pageNumFormatted = String(pageIdx).padStart(2, '0');
+    const slotClass = slot === 'left' ? 'mag-page-left' : slot === 'right' ? 'mag-page-right' : 'mag-page-single';
 
     // 0 = Portada Art
     if (pageIdx === 0 || slotDef?.type === 'cover') {
       return (
-        <div className={`mag-page mag-page-cover-art ${slot === 'left' ? 'mag-page-left' : ''}`}>
+        <div className={`mag-page mag-page-cover-art ${slotClass}`}>
           <div className="mag-cover-full">
             {coverImage ? (
               <img
@@ -268,7 +272,7 @@ export function InteractiveIssueReader({
     // 1 = Carta Editorial
     if (pageIdx === 1 || slotDef?.type === 'letter') {
       return (
-        <div className={`mag-page mag-page-cover-intro ${slot === 'right' ? 'mag-page-right' : ''}`}>
+        <div className={`mag-page mag-page-cover-intro ${slotClass}`}>
           <div className="mag-page-inner">
             <span className="mag-kicker">
               CARTA EDITORIAL · Nº {formattedIssueNum}
@@ -300,7 +304,7 @@ export function InteractiveIssueReader({
     // 2 = Sumario (TOC) Dinámico
     if (pageIdx === 2 || slotDef?.type === 'toc') {
       return (
-        <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+        <div className={`mag-page ${slotClass}`}>
           <div className="mag-page-inner">
             <span className="mag-kicker">
               TABLE OF CONTENTS · Nº {formattedIssueNum}
@@ -351,7 +355,7 @@ export function InteractiveIssueReader({
     // 3 = Patrocinador Oficial o Editorial Standard
     if (pageIdx === 3 || slotDef?.type === 'sponsor') {
       return (
-        <div className={`mag-page ${slot === 'right' ? 'mag-page-right' : ''}`}>
+        <div className={`mag-page ${slotClass}`}>
           <div className="mag-page-inner mag-sponsor-or-letter">
             {featuredSponsor ? (
               <div className="mag-ad-spread">
@@ -401,7 +405,7 @@ export function InteractiveIssueReader({
     // Colofón
     if (pageIdx === totalPages - 2 || slotDef?.type === 'colophon') {
       return (
-        <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+        <div className={`mag-page ${slotClass}`}>
           <div className="mag-page-inner mag-colophon">
             <span className="mag-kicker">COLOFÓN EDITORIAL</span>
             <h3>GLAMORA · REVISTA DIGITAL</h3>
@@ -429,7 +433,7 @@ export function InteractiveIssueReader({
     // Contraportada final
     if (pageIdx === totalPages - 1 || slotDef?.type === 'backcover') {
       return (
-        <div className={`mag-page mag-backcover ${slot === 'right' ? 'mag-page-right' : ''}`}>
+        <div className={`mag-page mag-backcover ${slotClass}`}>
           <div className="mag-backcover-inner">
             <span className="mag-backcover-monogram">G</span>
             <strong>GLAMORA</strong>
@@ -452,13 +456,19 @@ export function InteractiveIssueReader({
     if (slotDef && slotDef.type === 'article-page') {
       const { article: currentArticle, spreadDescriptor, slot: pageSlot } = slotDef;
 
-      const photoFilter = mergedDesign?.articleFilters?.[currentArticle.id] || 'natural';
-      const focalPoint = mergedDesign?.articleFocalPoints?.[currentArticle.id] || 'center';
+      const photoFilter =
+        (currentArticle.id && mergedDesign?.articleFilters?.[currentArticle.id]) ||
+        (currentArticle.slug && mergedDesign?.articleFilters?.[currentArticle.slug]) ||
+        'natural';
+      const focalPoint =
+        (currentArticle.id && mergedDesign?.articleFocalPoints?.[currentArticle.id]) ||
+        (currentArticle.slug && mergedDesign?.articleFocalPoints?.[currentArticle.slug]) ||
+        'center';
       const filterStyleClass = `photo-filter-${photoFilter}`;
 
       const currentLayout: SpreadLayoutStyle =
-        mergedDesign.articleLayouts?.[currentArticle.id] ||
-        mergedDesign.articleLayouts?.[currentArticle.slug] ||
+        (currentArticle.id && mergedDesign.articleLayouts?.[currentArticle.id]) ||
+        (currentArticle.slug && mergedDesign.articleLayouts?.[currentArticle.slug]) ||
         'vogue-classic';
 
       const isCinemaRight = currentLayout === 'cinema-bleed';
@@ -471,6 +481,8 @@ export function InteractiveIssueReader({
         // A) PRIMER PLIEGO DE APERTURA: Ejecuta el layout seleccionado por el editor
         if (spreadDescriptor.isFirstSpread) {
           const primaryPhoto =
+            (currentArticle.id && mergedDesign?.articleCoverOverrides?.[currentArticle.id]) ||
+            (currentArticle.slug && mergedDesign?.articleCoverOverrides?.[currentArticle.slug]) ||
             spreadDescriptor.leftPhotos[0]?.url ||
             getCleanImageUrl(currentArticle.cover_image) ||
             '/brand/glamora-mark.png';
@@ -486,7 +498,7 @@ export function InteractiveIssueReader({
           // 1. Cinema Full Bleed
           if (currentLayout === 'cinema-bleed') {
             return (
-              <div className={`mag-page mag-page-cinema-dark ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className={`mag-page mag-page-cinema-dark ${slotClass}`}>
                 <div className="mag-cinema-frame">
                   <img
                     src={primaryPhoto}
@@ -516,7 +528,7 @@ export function InteractiveIssueReader({
           // 2. Glamora Asymmetric Spread
           if (currentLayout === 'vogue-asymmetric') {
             return (
-              <div className={`mag-page mag-vogue-asym-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className={`mag-page mag-vogue-asym-left ${slotClass}`}>
                 <span className="mag-kicker">
                   GLAMORA SIGNATURE · {(currentArticle.city || 'BOLIVIA').toUpperCase()}
                 </span>
@@ -558,7 +570,7 @@ export function InteractiveIssueReader({
           // 3. Glamora Atelier Collage / Moodboard
           if (currentLayout === 'vogue-collage') {
             return (
-              <div className={`mag-page mag-envogue-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className={`mag-page mag-envogue-page ${slotClass}`}>
                 <div className="mag-envogue-header">
                   <span className="mag-envogue-italic">The</span>
                   <strong className="mag-envogue-masthead">GLAMORA</strong>
@@ -600,7 +612,7 @@ export function InteractiveIssueReader({
           // 4. Glamora Social Mosaic
           if (currentLayout === 'social-mosaic') {
             return (
-              <div className={`mag-page mag-social-mosaic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className={`mag-page mag-social-mosaic-left ${slotClass}`}>
                 <div className="mag-social-header-banner">
                   <span className="mag-social-pill">GLAMORA SOCIAL</span>
                   <span className="mag-social-venue">
@@ -640,7 +652,7 @@ export function InteractiveIssueReader({
           // 5. Glamora Pull-Quote (Retrato de autor)
           if (currentLayout === 'editorial-quote') {
             return (
-              <div className={`mag-page mag-quote-spread-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+              <div className={`mag-page mag-quote-spread-left ${slotClass}`}>
                 <div className="mag-quote-portrait-plate">
                   <img
                     src={primaryPhoto}
@@ -663,7 +675,7 @@ export function InteractiveIssueReader({
 
           // 6. Glamora Classic Fashion Plate (Lámina Noble a Página Completa)
           return (
-            <div className={`mag-page mag-vogue-classic-left ${slot === 'left' ? 'mag-page-left' : ''}`}>
+            <div className={`mag-page mag-vogue-classic-left ${slotClass}`}>
               <div className="mag-classic-fashion-plate">
                 <img
                   src={primaryPhoto}
@@ -690,7 +702,7 @@ export function InteractiveIssueReader({
           const photoA = spreadDescriptor.leftPhotos[0];
           const photoB = spreadDescriptor.leftPhotos[1];
           return (
-            <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+            <div className={`mag-page ${slotClass}`}>
               <div className="mag-gallery-feature-plate">
                 <div className="mag-gallery-feature-header">
                   <span>GLAMORA ARCHIVE · {(currentArticle.category || 'SOCIEDAD').toUpperCase()}</span>
@@ -738,7 +750,7 @@ export function InteractiveIssueReader({
         if (spreadDescriptor.leftKind === 'gallery-single') {
           const photo = spreadDescriptor.leftPhotos[0];
           return (
-            <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+            <div className={`mag-page ${slotClass}`}>
               <div className="mag-gallery-feature-plate">
                 <div className="mag-gallery-feature-header">
                   <span>GLAMORA ARCHIVE · {(currentArticle.category || 'SOCIEDAD').toUpperCase()}</span>
@@ -779,7 +791,7 @@ export function InteractiveIssueReader({
             : 'Elegancia, cultura contemporánea y crónica de autor.';
 
         return (
-          <div className={`mag-page ${slot === 'left' ? 'mag-page-left' : ''}`}>
+          <div className={`mag-page ${slotClass}`}>
             <div className="mag-quote-feature-plate">
               <blockquote>
                 {currentArticle.excerpt || quoteFallback}
@@ -1132,6 +1144,16 @@ export function InteractiveIssueReader({
             </div>
 
             <div className="mag-reader-top-actions">
+              {allowPrintGuides && (
+                <button
+                  type="button"
+                  className={`mag-reader-top-btn ${showPrintGuides ? 'mag-reader-guide-active' : ''}`}
+                  onClick={() => setShowPrintGuides((prev) => !prev)}
+                  title="Conmutar guías editoriales de corte, sangrado y zona segura (213 × 276 mm)"
+                >
+                  📏 GUÍAS IMPRESIÓN {showPrintGuides ? '● ON' : '○ OFF'}
+                </button>
+              )}
               <button
                 type="button"
                 className="mag-reader-top-btn"
@@ -1180,6 +1202,24 @@ export function InteractiveIssueReader({
                       : ''
                 }`}
               >
+                {showPrintGuides && (
+                  <div className="mag-print-guides-overlay mag-print-guides-mobile" aria-hidden="true">
+                    <div className="mag-guide-bleed-box">
+                      <span className="mag-guide-tag mag-tag-bleed-top">SANGRADO +3mm</span>
+                    </div>
+                    <span className="mag-crop-mark mag-crop-tl" />
+                    <span className="mag-crop-mark mag-crop-tr" />
+                    <span className="mag-crop-mark mag-crop-bl" />
+                    <span className="mag-crop-mark mag-crop-br" />
+                    <div className="mag-guide-safe-single">
+                      <span className="mag-guide-tag mag-tag-safe">ZONA SEGURA 12mm</span>
+                    </div>
+                    <div className="mag-guide-hud-bar">
+                      <span>213 × 276 mm · SEGURO 12mm</span>
+                      <span>300 DPI</span>
+                    </div>
+                  </div>
+                )}
                 {renderPageContent(activePageIndex, 'single')}
               </div>
             ) : (
@@ -1194,6 +1234,30 @@ export function InteractiveIssueReader({
                 }`}
               >
                 <div className="mag-spine-shadow" aria-hidden="true" />
+                {showPrintGuides && (
+                  <div className="mag-print-guides-overlay" aria-hidden="true">
+                    <div className="mag-guide-bleed-box">
+                      <span className="mag-guide-tag mag-tag-bleed-top">SANGRADO TÉCNICO (+3mm)</span>
+                    </div>
+                    <span className="mag-crop-mark mag-crop-tl" />
+                    <span className="mag-crop-mark mag-crop-tr" />
+                    <span className="mag-crop-mark mag-crop-bl" />
+                    <span className="mag-crop-mark mag-crop-br" />
+                    <div className="mag-guide-safe-left">
+                      <span className="mag-guide-tag mag-tag-safe">ZONA SEGURA 12mm</span>
+                    </div>
+                    <div className="mag-guide-spine-axis">
+                      <span className="mag-guide-tag mag-tag-spine">PLIEGUE CENTRAL · LOMO</span>
+                    </div>
+                    <div className="mag-guide-safe-right">
+                      <span className="mag-guide-tag mag-tag-safe">ZONA SEGURA 12mm</span>
+                    </div>
+                    <div className="mag-guide-hud-bar">
+                      <span>HAUTE COUTURE FORMAT · 213 × 276 mm (PLIEGO 426 × 276 mm)</span>
+                      <span>SANGRADO: 3 mm · CORTE: EXACTO · MARGEN SEGURO: 12 mm · PRENSA: 300 DPI</span>
+                    </div>
+                  </div>
+                )}
                 {renderPageContent(desktopSpreadIndex * 2, 'left')}
                 {renderPageContent(desktopSpreadIndex * 2 + 1, 'right')}
               </div>
