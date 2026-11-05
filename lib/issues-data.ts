@@ -1,4 +1,4 @@
-import { supabaseServer } from './supabase';
+import { supabasePublic } from './supabase';
 
 export type MagazineIssue = {
   id: string;
@@ -35,7 +35,7 @@ export const DEMO_MAGAZINE_ISSUES: MagazineIssue[] = [
 
 export async function getPublishedIssues(): Promise<MagazineIssue[]> {
   try {
-    const db = await supabaseServer();
+    const db = supabasePublic();
     if (!db) return DEMO_MAGAZINE_ISSUES;
 
     const { data, error } = await db
@@ -65,7 +65,7 @@ export async function getLatestPublishedIssue(): Promise<MagazineIssue | null> {
 
 export async function getIssueBySlug(slug: string): Promise<MagazineIssue | null> {
   try {
-    const db = await supabaseServer();
+    const db = supabasePublic();
     if (!db) {
       return DEMO_MAGAZINE_ISSUES.find((i) => i.slug === slug) || null;
     }

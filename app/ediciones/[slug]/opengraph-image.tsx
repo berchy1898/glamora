@@ -9,17 +9,24 @@ export const size = {
 };
 export const contentType = 'image/png';
 
-export default async function Image({
+export default async function OpenGraphImage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
-  const issue = await getIssueBySlug(slug);
+  let issueNum = '01';
+  let issueTitle = 'The Digital Issue';
 
-  const issueNum = issue ? String(issue.issue_number).padStart(2, '0') : '01';
-  const issueTitle = issue?.title || 'The Digital Issue';
-  const coverUrl = issue?.cover_image || null;
+  try {
+    const { slug } = await params;
+    const issue = await getIssueBySlug(slug);
+    if (issue) {
+      issueNum = String(issue.issue_number || 1).padStart(2, '0');
+      issueTitle = issue.title || 'The Digital Issue';
+    }
+  } catch {
+    // fallback defaults
+  }
 
   return new ImageResponse(
     (
@@ -29,24 +36,25 @@ export default async function Image({
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: '#0a0908',
+          backgroundColor: '#0d0b0a',
+          backgroundImage: 'radial-gradient(circle at 75% 30%, #1a1614 0%, #0d0b0a 70%)',
           color: '#f6f2ec',
           fontFamily: 'serif',
           position: 'relative',
-          padding: '48px 56px',
+          padding: '44px 54px',
           boxSizing: 'border-box',
-          border: '14px solid #161412',
+          border: '14px solid #161311',
         }}
       >
         {/* Inner Gold Inset Frame */}
         <div
           style={{
             position: 'absolute',
-            top: 16,
-            left: 16,
-            right: 16,
-            bottom: 16,
-            border: '1px solid rgba(201, 163, 107, 0.45)',
+            top: 14,
+            left: 14,
+            right: 14,
+            bottom: 14,
+            border: '1px solid rgba(201, 163, 107, 0.4)',
             pointerEvents: 'none',
           }}
         />
@@ -58,8 +66,8 @@ export default async function Image({
             justifyContent: 'space-between',
             alignItems: 'center',
             borderBottom: '1px solid rgba(201, 163, 107, 0.3)',
-            paddingBottom: '20px',
-            marginBottom: '36px',
+            paddingBottom: '18px',
+            marginBottom: '32px',
           }}
         >
           <div
@@ -77,8 +85,8 @@ export default async function Image({
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              fontSize: '14px',
-              letterSpacing: '0.28em',
+              fontSize: '13px',
+              letterSpacing: '0.26em',
               color: '#c9a36b',
               textTransform: 'uppercase',
             }}
@@ -95,68 +103,86 @@ export default async function Image({
             display: 'flex',
             flex: 1,
             alignItems: 'center',
-            gap: '48px',
+            gap: '46px',
           }}
         >
-          {/* Cover representation */}
+          {/* Cover Didone Plate Representation */}
           <div
             style={{
-              width: '320px',
-              height: '420px',
+              width: '300px',
+              height: '410px',
               display: 'flex',
               flexDirection: 'column',
-              backgroundColor: '#161412',
-              border: '2px solid rgba(201, 163, 107, 0.6)',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.8)',
-              overflow: 'hidden',
+              backgroundColor: '#161311',
+              border: '2px solid rgba(201, 163, 107, 0.65)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.85)',
               position: 'relative',
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: 'space-between',
+              padding: '30px 24px',
+              boxSizing: 'border-box',
             }}
           >
-            {coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={coverUrl}
-                alt={issueTitle}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '24px',
-                  textAlign: 'center',
-                }}
-              >
-                <div style={{ fontSize: '32px', letterSpacing: '0.2em', color: '#c9a36b', marginBottom: '8px' }}>
-                  GLAMORA
-                </div>
-                <div style={{ fontSize: '18px', color: '#ded3c5' }}>EDICIÓN Nº {issueNum}</div>
-              </div>
-            )}
             <div
               style={{
-                position: 'absolute',
-                bottom: '12px',
-                right: '12px',
-                backgroundColor: 'rgba(10, 9, 8, 0.92)',
-                border: '1px solid #c9a36b',
-                color: '#c9a36b',
                 fontSize: '11px',
-                letterSpacing: '0.15em',
-                padding: '4px 10px',
-                fontWeight: 600,
+                letterSpacing: '0.24em',
+                color: '#c9a36b',
+                textTransform: 'uppercase',
               }}
             >
-              Nº {issueNum}
+              EDICIÓN DIGITAL
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '34px',
+                  letterSpacing: '0.18em',
+                  color: '#f6f2ec',
+                  marginBottom: '10px',
+                }}
+              >
+                GLAMORA
+              </div>
+              <div
+                style={{
+                  width: '40px',
+                  height: '1px',
+                  backgroundColor: '#c9a36b',
+                  marginBottom: '10px',
+                }}
+              />
+              <div
+                style={{
+                  fontSize: '14px',
+                  letterSpacing: '0.2em',
+                  color: '#c9a36b',
+                }}
+              >
+                Nº {issueNum}
+              </div>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: 'rgba(201, 163, 107, 0.12)',
+                border: '1px solid #c9a36b',
+                color: '#c9a36b',
+                fontSize: '10px',
+                letterSpacing: '0.18em',
+                padding: '4px 12px',
+                textTransform: 'uppercase',
+              }}
+            >
+              HAUTE COUTURE
             </div>
           </div>
 
@@ -174,22 +200,22 @@ export default async function Image({
                 display: 'inline-flex',
                 color: '#c9a36b',
                 fontSize: '13px',
-                letterSpacing: '0.25em',
+                letterSpacing: '0.24em',
                 textTransform: 'uppercase',
                 marginBottom: '16px',
               }}
             >
-              EDICIÓN COLECCIONABLE · VOLUMEN {new Date().getFullYear()}
+              EDICIÓN Nº {issueNum} · VOLUMEN {new Date().getFullYear()}
             </div>
 
             <div
               style={{
-                fontSize: '46px',
+                fontSize: '44px',
                 lineHeight: 1.15,
                 fontWeight: 700,
                 color: '#f6f2ec',
-                marginBottom: '20px',
-                maxHeight: '160px',
+                marginBottom: '22px',
+                maxHeight: '150px',
                 overflow: 'hidden',
               }}
             >
@@ -201,7 +227,7 @@ export default async function Image({
                 display: 'flex',
                 flexWrap: 'wrap',
                 gap: '8px',
-                marginTop: '12px',
+                marginTop: '8px',
               }}
             >
               {['MODA & ATELIER', 'SOCIEDAD & GALAS', 'DIÁLOGOS', 'GOURMET'].map((tag) => (
@@ -209,10 +235,10 @@ export default async function Image({
                   key={tag}
                   style={{
                     backgroundColor: 'rgba(201, 163, 107, 0.12)',
-                    border: '1px solid rgba(201, 163, 107, 0.35)',
+                    border: '1px solid rgba(201, 163, 107, 0.4)',
                     color: '#ded3c5',
                     fontSize: '11px',
-                    letterSpacing: '0.15em',
+                    letterSpacing: '0.14em',
                     padding: '6px 12px',
                     textTransform: 'uppercase',
                   }}
@@ -232,13 +258,13 @@ export default async function Image({
             alignItems: 'center',
             borderTop: '1px solid rgba(201, 163, 107, 0.25)',
             paddingTop: '16px',
-            marginTop: '20px',
-            fontSize: '12px',
+            marginTop: '18px',
+            fontSize: '11px',
             letterSpacing: '0.2em',
             color: '#a39788',
           }}
         >
-          <span>LECTOR DIGITAL DE DOBLE PÁGINA · EXPERIENCIA DIDONE</span>
+          <span>LECTOR DIGITAL DE DOBLE PÁGINA · ALTA COSTURA DIDONE</span>
           <span style={{ color: '#c9a36b' }}>GLAMORA-TWO.VERCEL.APP</span>
         </div>
       </div>
