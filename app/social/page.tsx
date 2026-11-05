@@ -57,16 +57,16 @@ export default async function Social() {
 
   return (
     <main className="container people-page social-page">
-      <header className="people-intro">
-        <div className="eyebrow">THE PEOPLE · THE MOMENTS · THE SCENE</div>
+      <header className="people-intro social-intro">
+        <div className="eyebrow">CHRONIQUE SOCIALE &middot; NOCHES, GALAS &middot; THE SCENE</div>
         <div className="people-intro-main people-intro-main-long">
-          <h1>SOCIALES</h1>
+          <h1>GLAMORA SOCIAL</h1>
           <p>
-            Las personas, los lugares y las celebraciones que construyen la vida social de nuestras ciudades.
+            La crónica visual de la vida social, los grandes encuentros gastronómicos y las celebraciones que marcan el pulso de nuestras ciudades.
           </p>
         </div>
         <div className="people-index" aria-label="Temas de SOCIALES">
-          EVENTOS <i>·</i> ENCUENTROS <i>·</i> CELEBRACIONES <i>·</i> GALERÍAS
+          EVENTOS DE AUTOR <i>·</i> ENCUENTROS &amp; GALAS <i>·</i> ALTA COCTELERÍA <i>·</i> REPORTAJES VISUALES
         </div>
       </header>
 
@@ -86,21 +86,31 @@ export default async function Social() {
         </div>
       ) : feature ? (
         <>
-          <section className="people-feature" aria-labelledby="social-feature-title">
+          <section className="people-feature social-hero-feature" aria-labelledby="social-feature-title">
             {feature.cover_image ? (
-              <Link href={`/articulo/${feature.slug}`} className="people-feature-image">
+              <Link href={`/articulo/${feature.slug}`} className="people-feature-image social-hero-image-wrap">
                 <Image
                   src={feature.cover_image}
                   alt={feature.title}
                   fill
                   priority
                   unoptimized={feature.cover_image.startsWith('http')}
-                  sizes="(max-width: 700px) 100vw, 62vw"
+                  sizes="(max-width: 900px) 100vw, 65vw"
+                  className="social-hero-cover-img"
                 />
+                <div className="social-hero-corner-badge">
+                  <span className="social-badge-tag">
+                    {feature.city ? feature.city.toUpperCase() : 'BOLIVIA'}
+                    {feature.venue ? ` · ${feature.venue.toUpperCase()}` : ''}
+                  </span>
+                  <span className="social-badge-counter">
+                    ✦ {featureGallery.length > 0 ? `${featureGallery.length + 1} FOTOGRAFÍAS` : 'COBERTURA EXCLUSIVA'}
+                  </span>
+                </div>
               </Link>
             ) : (
               <div
-                className="people-feature-image people-feature-image-empty"
+                className="people-feature-image people-feature-image-empty social-hero-image-wrap"
                 role="img"
                 aria-label="La cobertura no tiene fotografía disponible"
               >
@@ -108,42 +118,46 @@ export default async function Social() {
               </div>
             )}
 
-            <div className="people-feature-copy">
-              <div className="people-feature-meta">
-                {[feature.city || 'BOLIVIA', 'GLAMORA SOCIAL', feature.venue]
+            <div className="people-feature-copy social-hero-copy">
+              <div className="social-hero-kicker">
+                <span className="social-kicker-dot" aria-hidden="true">●</span>
+                {[feature.city || 'BOLIVIA', 'GLAMORA SOCIAL', feature.venue || feature.event_name]
                   .filter(Boolean)
                   .join(' · ')}
               </div>
-              <h2 id="social-feature-title">{feature.title}</h2>
-              {feature.excerpt && <p className="people-feature-excerpt">{feature.excerpt}</p>}
+              <h2 id="social-feature-title" className="social-hero-title">{feature.title}</h2>
+              {feature.excerpt && <p className="people-feature-excerpt social-hero-excerpt">{feature.excerpt}</p>}
               {(featureDate || feature.author) && (
-                <div className="people-feature-byline">
+                <div className="people-feature-byline social-hero-byline">
                   {featureDate && (
                     <time dateTime={feature.published_at || undefined}>{featureDate}</time>
                   )}
                   {feature.author && <span>{feature.author}</span>}
+                  {feature.event_name && <span className="social-hero-event-tag">· {feature.event_name}</span>}
                 </div>
               )}
-              <Link className="people-read-link" href={`/articulo/${feature.slug}`}>
-                VER COBERTURA COMPLETA <span>↗</span>
-              </Link>
+              <div className="social-hero-action-row">
+                <Link className="social-hero-cta" href={`/articulo/${feature.slug}`}>
+                  EXPLORAR COBERTURA COMPLETA &amp; GALERÍA <span>→</span>
+                </Link>
+              </div>
             </div>
           </section>
 
           {(featureGallery.length > 0 || featurePeople.length > 0) && (
             <section className="social-diary-section" aria-labelledby="social-diary-title">
-              <div className="section-heading">
+              <div className="section-heading social-diary-heading">
                 <div>
-                  <span className="section-overline">INSIDE THE EXPERIENCE · PHOTO DIARY</span>
-                  <h2 id="social-diary-title">{feature.event_name || 'Momentos de la cobertura'}</h2>
+                  <span className="section-overline">CARRETE EXCLUSIVO &middot; PHOTO DIARY</span>
+                  <h2 id="social-diary-title">{feature.event_name ? `Momentos en ${feature.event_name}` : (feature.venue ? `Atmósfera en ${feature.venue}` : 'Diario visual de la velada')}</h2>
                 </div>
                 <span className="people-story-count">
                   {feature.city || 'BOLIVIA'}
                   {feature.event_date
                     ? ` · ${new Date(`${feature.event_date}T12:00:00`).toLocaleDateString('es-BO', {
                         day: '2-digit',
-                        month: '2-digit',
-                        year: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
                       })}`
                     : ''}
                 </span>

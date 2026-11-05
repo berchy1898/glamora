@@ -831,6 +831,36 @@ export default function Admin() {
     setNewGalleryCaptions((current) => current.filter((_, i) => i !== index));
   }
 
+  function setExistingAsCover(index: number) {
+    const rawEntry = existingGalleryUrls[index];
+    if (!rawEntry) return;
+    const [photoUrl] = (rawEntry.includes('|') ? rawEntry.split('|') : [rawEntry, '']).map((s) => s.trim());
+    if (!photoUrl) return;
+
+    const oldCover = form.cover_image;
+    let nextUrls = [...existingGalleryUrls];
+    if (oldCover && oldCover !== photoUrl && !nextUrls.some((u) => u.startsWith(oldCover))) {
+      nextUrls = [oldCover, ...nextUrls];
+    }
+
+    update('cover_image', photoUrl);
+    setCoverPreview(photoUrl);
+    setCoverFile(null);
+    update('gallery_urls', nextUrls.join('\n'));
+    setMessage('Fotografía asignada como Portada Principal.');
+  }
+
+  function setNewGalleryAsCover(index: number) {
+    const file = galleryFiles[index];
+    const preview = galleryPreviews[index];
+    if (!file || !preview) return;
+
+    setCoverFile(file);
+    setCoverPreview(preview);
+    removeNewGallery(index);
+    setMessage('Fotografía nueva seleccionada como Portada Principal.');
+  }
+
   const previewParagraphs = splitEditorialParagraphs(form.body);
 
   const previewPhotos = [
@@ -1243,7 +1273,13 @@ export default function Admin() {
               CATEGORÍA
               <select
                 value={form.category}
-                onChange={(e) => update('category', e.target.value)}
+                onChange={(e) => {
+                  const cat = e.target.value;
+                  update('category', cat);
+                  if (['Society', 'Sociedad', 'Social', 'Sociales'].some((s) => s.toLowerCase() === cat.toLowerCase())) {
+                    update('is_social', true);
+                  }
+                }}
               >
                 {[
                   'Moda',
@@ -1282,6 +1318,60 @@ export default function Admin() {
                 ))}
               </select>
             </label>
+
+            <div
+              className="wide"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 16,
+                padding: '12px 18px',
+                background: form.is_social ? 'rgba(113, 28, 50, 0.05)' : '#faf7f2',
+                border: form.is_social ? '1px solid #711c32' : '1px solid #e7ded5',
+                marginTop: 4,
+                marginBottom: 6,
+              }}
+            >
+              <div>
+                <strong
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: '.16em',
+                    textTransform: 'uppercase',
+                    color: form.is_social ? '#711c32' : '#333',
+                  }}
+                >
+                  MODO COBERTURA · GLAMORA SOCIAL {form.is_social ? '✓ ACTIVO' : ''}
+                </strong>
+                <p style={{ margin: '3px 0 0', fontSize: 11, color: '#666', lineHeight: 1.4 }}>
+                  {form.is_social
+                    ? 'Esta publicación se presentará en la sección SOCIALES con su fecha de velada, venue y carrete fotográfico.'
+                    : 'Actívalo si estás cubriendo una velada, gala, inauguración de restaurante/bar o evento social.'}
+                </p>
+              </div>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  margin: 0,
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: 11,
+                  color: '#711c32',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={form.is_social}
+                  onChange={(e) => update('is_social', e.target.checked)}
+                  style={{ width: 17, height: 17, cursor: 'pointer' }}
+                />
+                <span>COBERTURA SOCIAL</span>
+              </label>
+            </div>
 
             <label className="wide">
               EXTRACTO
@@ -1393,21 +1483,51 @@ export default function Admin() {
             </label>
 
             {coverPreview && (
-              <div className="wide">
-                <p>Vista previa de la portada:</p>
-                <img
-                  src={coverPreview}
-                  alt="Vista previa de portada"
-                  style={{
-                    display: 'block',
-                    maxWidth: '260px',
-                    width: '100%',
-                    aspectRatio: '3 / 4',
-                    objectFit: 'contain',
-                    background: '#eee9e2',
-                    boxShadow: '0 8px 25px rgba(0,0,0,0.12)',
-                  }}
-                />
+              <div className="wide" style={{ marginTop: 8, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: 9, letterSpacing: '.14em', color: '#711c32', fontWeight: 600 }}>
+                    ★ PORTADA PRINCIPAL ACTIVA (ENCUADRE PANORÁMICO REAL)
+                  </span>
+                  <span style={{ fontSize: 10, color: '#777' }}>
+                    Esta imagen abrirá el artículo y encabezará la sección Sociales sin recortes
+                  </span>
+                </div>
+                <div style={{
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '540px',
+                  aspectRatio: '16 / 10',
+                  background: '#19161c',
+                  border: '1px solid #d9c2b3',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                }}>
+                  <img
+                    src={coverPreview}
+                    alt="Vista previa de portada principal"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    padding: '3px 8px',
+                    background: 'rgba(23, 19, 26, 0.82)',
+                    backdropFilter: 'blur(4px)',
+                    color: '#dfcfbe',
+                    fontSize: 9,
+                    letterSpacing: '.14em',
+                    fontWeight: 600,
+                    border: '1px solid rgba(223, 207, 190, 0.25)',
+                  }}>
+                    ★ PORTADA HERO
+                  </span>
+                </div>
               </div>
             )}
 
@@ -1588,23 +1708,27 @@ export default function Admin() {
 
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(125px, 1fr))',
-                    gap: 14,
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(195px, 1fr))',
+                    gap: 16,
                   }}>
                     {existingGalleryUrls.map((rawEntry, index) => {
                       const [photoUrl, photoCaption] = (rawEntry.includes('|') ? rawEntry.split('|') : [rawEntry, '']).map((s) => s.trim());
+                      const isCurrentCover = form.cover_image === photoUrl || coverPreview === photoUrl;
+
                       return (
                         <div key={`${photoUrl}-${index}`} style={{
                           minWidth: 0,
-                          border: '1px solid #e7ded5',
+                          border: isCurrentCover ? '2px solid #711C32' : '1px solid #d9c2b3',
                           background: '#fff',
-                          padding: 7,
+                          padding: 8,
+                          position: 'relative',
+                          boxShadow: isCurrentCover ? '0 4px 15px rgba(113, 28, 50, 0.12)' : 'none',
                         }}>
                           <div style={{
                             position: 'relative',
                             width: '100%',
-                            aspectRatio: '3 / 4',
-                            background: '#f3f0ec',
+                            aspectRatio: '16 / 10',
+                            background: '#19161c',
                             overflow: 'hidden',
                           }}>
                             <img
@@ -1632,36 +1756,84 @@ export default function Admin() {
                             }}>
                               No se pudo cargar esta imagen
                             </div>
-                          </div>
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            gap: 4,
-                            paddingTop: 8,
-                          }}>
-                            <small style={{ color: '#777', letterSpacing: '.08em', fontSize: 10 }}>
+
+                            <span style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: 6,
+                              padding: '2px 6px',
+                              background: 'rgba(23, 19, 26, 0.78)',
+                              color: '#dfcfbe',
+                              fontSize: 9,
+                              letterSpacing: '.12em',
+                              fontWeight: 600,
+                            }}>
                               FOTO {String(index + 1).padStart(2, '0')}
-                            </small>
-                            <div style={{ display: 'flex', gap: 3 }}>
+                            </span>
+                          </div>
+
+                          <div style={{ paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {isCurrentCover ? (
+                              <div style={{
+                                width: '100%',
+                                textAlign: 'center',
+                                background: '#711C32',
+                                color: '#fff',
+                                padding: '4px 6px',
+                                fontSize: 9,
+                                letterSpacing: '.14em',
+                                fontWeight: 600,
+                              }}>
+                                ★ PORTADA PRINCIPAL
+                              </div>
+                            ) : (
                               <button
                                 type="button"
-                                className="text-link"
-                                title="Mover antes"
-                                aria-label={`Mover fotografía ${index + 1} antes`}
-                                disabled={index === 0 || busy}
-                                onClick={() => moveExistingGallery(index, -1)}
-                                style={{ padding: '2px 4px' }}
-                              >↑</button>
-                              <button
-                                type="button"
-                                className="text-link"
-                                title="Mover después"
-                                aria-label={`Mover fotografía ${index + 1} después`}
-                                disabled={index === existingGalleryUrls.length - 1 || busy}
-                                onClick={() => moveExistingGallery(index, 1)}
-                                style={{ padding: '2px 4px' }}
-                              >↓</button>
+                                onClick={() => setExistingAsCover(index)}
+                                disabled={busy}
+                                style={{
+                                  width: '100%',
+                                  background: '#faf7f2',
+                                  color: '#711C32',
+                                  border: '1px solid #711C32',
+                                  padding: '4px 6px',
+                                  fontSize: 9,
+                                  letterSpacing: '.12em',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                ⭐ USAR DE PORTADA
+                              </button>
+                            )}
+
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              paddingTop: 2,
+                            }}>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button
+                                  type="button"
+                                  className="text-link"
+                                  title="Mover antes en la secuencia"
+                                  aria-label={`Mover fotografía ${index + 1} antes`}
+                                  disabled={index === 0 || busy}
+                                  onClick={() => moveExistingGallery(index, -1)}
+                                  style={{ padding: '2px 6px', border: '1px solid #ddd', fontSize: 11 }}
+                                >◀</button>
+                                <button
+                                  type="button"
+                                  className="text-link"
+                                  title="Mover después en la secuencia"
+                                  aria-label={`Mover fotografía ${index + 1} después`}
+                                  disabled={index === existingGalleryUrls.length - 1 || busy}
+                                  onClick={() => moveExistingGallery(index, 1)}
+                                  style={{ padding: '2px 6px', border: '1px solid #ddd', fontSize: 11 }}
+                                >▶</button>
+                              </div>
+
                               <button
                                 type="button"
                                 className="text-link"
@@ -1669,10 +1841,11 @@ export default function Admin() {
                                 aria-label={`Quitar fotografía ${index + 1}`}
                                 disabled={busy}
                                 onClick={() => removeExistingGallery(index)}
-                                style={{ padding: '2px 4px', color: '#711C32' }}
-                              >×</button>
+                                style={{ padding: '2px 6px', color: '#711C32', fontSize: 10, fontWeight: 600 }}
+                              >✕ QUITAR</button>
                             </div>
                           </div>
+
                           <input
                             type="text"
                             placeholder="Pie de foto / descripción…"
@@ -1706,42 +1879,79 @@ export default function Admin() {
               {galleryPreviews.length > 0 && (
                 <div style={{ marginTop: 24 }}>
                   <div className="eyebrow" style={{ marginBottom: 12 }}>
-                    NUEVAS FOTOGRAFÍAS · PENDIENTES DE SUBIR
+                    NUEVAS FOTOGRAFÍAS · PENDIENTES DE SUBIR ({galleryPreviews.length})
                   </div>
                   <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(125px, 1fr))',
-                    gap: 14,
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(195px, 1fr))',
+                    gap: 16,
                   }}>
                     {galleryPreviews.map((src, index) => (
                       <div key={src} style={{
                         border: '1px solid #d9c2b3',
                         background: '#fff',
-                        padding: 7,
+                        padding: 8,
                       }}>
-                        <img
-                          src={src}
-                          alt={`Nueva fotografía ${index + 1}`}
-                          style={{ width: '100%', aspectRatio: '3 / 4', objectFit: 'cover', display: 'block' }}
-                        />
                         <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          paddingTop: 8,
-                          gap: 6,
+                          position: 'relative',
+                          width: '100%',
+                          aspectRatio: '16 / 10',
+                          background: '#19161c',
+                          overflow: 'hidden',
                         }}>
-                          <small style={{ color: '#777', letterSpacing: '.08em', fontSize: 10 }}>
+                          <img
+                            src={src}
+                            alt={`Nueva fotografía ${index + 1}`}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                          <span style={{
+                            position: 'absolute',
+                            bottom: 6,
+                            left: 6,
+                            padding: '2px 6px',
+                            background: 'rgba(23, 19, 26, 0.78)',
+                            color: '#dfcfbe',
+                            fontSize: 9,
+                            letterSpacing: '.12em',
+                            fontWeight: 600,
+                          }}>
                             NUEVA {String(index + 1).padStart(2, '0')}
-                          </small>
+                          </span>
+                        </div>
+
+                        <div style={{ paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                           <button
                             type="button"
-                            className="text-link"
+                            onClick={() => setNewGalleryAsCover(index)}
                             disabled={busy}
-                            onClick={() => removeNewGallery(index)}
-                            style={{ color: '#711C32' }}
-                          >QUITAR</button>
+                            style={{
+                              width: '100%',
+                              background: '#faf7f2',
+                              color: '#711C32',
+                              border: '1px solid #711C32',
+                              padding: '4px 6px',
+                              fontSize: 9,
+                              letterSpacing: '.12em',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            ⭐ USAR DE PORTADA
+                          </button>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              className="text-link"
+                              disabled={busy}
+                              onClick={() => removeNewGallery(index)}
+                              style={{ color: '#711C32', fontSize: 10, fontWeight: 600 }}
+                            >
+                              ✕ QUITAR
+                            </button>
+                          </div>
                         </div>
+
                         <input
                           type="text"
                           placeholder="Pie de foto opcional…"
