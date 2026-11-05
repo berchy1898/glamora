@@ -16,6 +16,10 @@ import {
   type SpreadLayoutStyle,
   type PhotoEditorialFilter,
   type PhotoFocalPoint,
+  type FascicleKind,
+  type FashionWishlistItem,
+  type ArticleSponsorTag,
+  type MastheadStaffConfig,
 } from '@/lib/issue-design-types';
 import { InteractiveIssueReader } from '@/components/InteractiveIssueReader';
 import { EditorialImageCropperModal } from '@/components/EditorialImageCropperModal';
@@ -62,6 +66,30 @@ const LAYOUT_OPTIONS: { value: SpreadLayoutStyle; label: string; badge: string; 
     desc: 'Foto central amplia con viñetas de detalle en la base sin cubrir el sujeto.',
   },
   {
+    value: 'wishlist-png',
+    label: '✨ Wishlist & Bodegón Haute Couture (Prendas y Accesorios PNG Flotantes + Precios)',
+    badge: 'LUXURY WISHLIST',
+    desc: 'Objetos de deseo con transparencias flotantes, numeración circular 01, 02 y cartilla de precios por diseñador.',
+  },
+  {
+    value: 'haute-couture-spread',
+    label: '👑 Portada de Fascículo / Gran Apertura Atelier (Capitular Clásica Didone)',
+    badge: 'HAUTE COUTURE',
+    desc: 'Apertura de fascículo con passe-partout noble de marfil, capitular colosal y refinamiento editorial suizo.',
+  },
+  {
+    value: 'the-interview',
+    label: '🎙️ Diálogos & Entrevista (Preguntas & Respuestas Tipográficas + Cita Monumental)',
+    badge: 'THE INTERVIEW',
+    desc: 'Retrato de autor con citas en comillas gigantes y maquetación de diálogo para perfiles.',
+  },
+  {
+    value: 'the-taste',
+    label: '🍷 The Gourmet Review (Crítica Gastronómica, Nota de Cata y Sellos de Autor)',
+    badge: 'THE TASTE',
+    desc: 'Pliego para restaurantes y bodegas con sello de 5 estrellas y ficha técnica de maridaje.',
+  },
+  {
     value: 'cinema-bleed',
     label: '🎬 Cinema Dark (Pliego Nocturno Obsidiana)',
     badge: 'CINEMA DARK',
@@ -78,6 +106,33 @@ const LAYOUT_OPTIONS: { value: SpreadLayoutStyle; label: string; badge: string; 
     label: '📜 Gran Cita & Entrevista (Retrato de Autor + Cita Didone Gigante)',
     badge: 'PULL-QUOTE',
     desc: 'Retrato de impacto a la izquierda y colosal cita de autor abriendo la crónica a la derecha.',
+  },
+];
+
+const FASCICLE_OPTIONS: { value: FascicleKind; label: string; icon: string; desc: string }[] = [
+  {
+    value: 'moda-atelier',
+    label: '👗 Moda & Atelier (Alta Costura, Tendencias & Bodegón Wishlist)',
+    icon: '👗',
+    desc: 'Fascículo central de moda, editoriales de pasarela, siluetas y selección de piezas con transparencias PNG.',
+  },
+  {
+    value: 'sociedad-gala',
+    label: '🥂 Sociedad & Galas (Eventos, Alfombra Roja & Vida Nocturna)',
+    icon: '🥂',
+    desc: 'Grandes celebraciones, protagonistas de la noche, cócteles y momentos sociales en Bolivia.',
+  },
+  {
+    value: 'dialogos-entrevista',
+    label: '🎙️ Diálogos & Entrevistas (Perfiles, Creativos & Conversaciones)',
+    icon: '🎙️',
+    desc: 'Entrevistas en profundidad a diseñadores, artistas y personalidades con tipografía Didone y citas colosales.',
+  },
+  {
+    value: 'gourmet-lifestyle',
+    label: '🍷 Gourmet & Lifestyle (Gastronomía de Autor, Vinos & Espacios)',
+    icon: '🍷',
+    desc: 'Crítica gastronómica, maridaje de altura, arquitectura de hospitalidad y notas de cata.',
   },
 ];
 
@@ -322,6 +377,118 @@ export default function IssueBuilder() {
     }));
   }
 
+  function setArticleFascicle(articleId: string, fascicle: FascicleKind) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => ({
+      ...prev,
+      articleFascicles: {
+        ...(prev.articleFascicles || {}),
+        [articleId]: fascicle,
+        ...(art?.slug ? { [art.slug]: fascicle } : {}),
+      },
+    }));
+  }
+
+  function setArticleSponsorTag(
+    articleId: string,
+    tag: Partial<ArticleSponsorTag>
+  ) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => {
+      const existing = prev.articleSponsorTags?.[articleId] || {
+        active: false,
+        brandName: '',
+        roleLabel: 'En colaboración con',
+      };
+      const updated: ArticleSponsorTag = {
+        ...existing,
+        ...tag,
+      };
+      return {
+        ...prev,
+        articleSponsorTags: {
+          ...(prev.articleSponsorTags || {}),
+          [articleId]: updated,
+          ...(art?.slug ? { [art.slug]: updated } : {}),
+        },
+      };
+    });
+  }
+
+  function addWishlistItem(articleId: string) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => {
+      const existing = prev.articleWishlistItems?.[articleId] || [];
+      const newItem: FashionWishlistItem = {
+        id: 'w-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        pngUrl: '',
+        brand: 'DIOR',
+        item: 'Accesorio de Colección',
+        price: 'A pedido',
+      };
+      const updatedList = [...existing, newItem];
+      return {
+        ...prev,
+        articleWishlistItems: {
+          ...(prev.articleWishlistItems || {}),
+          [articleId]: updatedList,
+          ...(art?.slug ? { [art.slug]: updatedList } : {}),
+        },
+      };
+    });
+  }
+
+  function updateWishlistItem(
+    articleId: string,
+    index: number,
+    field: keyof FashionWishlistItem,
+    value: string
+  ) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => {
+      const existing = [...(prev.articleWishlistItems?.[articleId] || [])];
+      if (!existing[index]) return prev;
+      existing[index] = {
+        ...existing[index],
+        [field]: value,
+      };
+      return {
+        ...prev,
+        articleWishlistItems: {
+          ...(prev.articleWishlistItems || {}),
+          [articleId]: existing,
+          ...(art?.slug ? { [art.slug]: existing } : {}),
+        },
+      };
+    });
+  }
+
+  function removeWishlistItem(articleId: string, index: number) {
+    const art = articles.find((a) => a.id === articleId);
+    setDesign((prev) => {
+      const existing = [...(prev.articleWishlistItems?.[articleId] || [])];
+      existing.splice(index, 1);
+      return {
+        ...prev,
+        articleWishlistItems: {
+          ...(prev.articleWishlistItems || {}),
+          [articleId]: existing,
+          ...(art?.slug ? { [art.slug]: existing } : {}),
+        },
+      };
+    });
+  }
+
+  function setMastheadField(field: keyof MastheadStaffConfig, value: string) {
+    setDesign((prev) => ({
+      ...prev,
+      mastheadStaff: {
+        ...(prev.mastheadStaff || DEFAULT_ISSUE_DESIGN.mastheadStaff || {}),
+        [field]: value,
+      },
+    }));
+  }
+
   function removeSelectedCover() {
     setCoverFile(null);
     if (fileInputRef.current) {
@@ -369,6 +536,10 @@ export default function IssueBuilder() {
       articleFocalPoints: savedDesign.articleFocalPoints || {},
       articleCoverOverrides: savedDesign.articleCoverOverrides || {},
       articlePhotoAdjustments: savedDesign.articlePhotoAdjustments || {},
+      articleFascicles: savedDesign.articleFascicles || {},
+      articleWishlistItems: savedDesign.articleWishlistItems || {},
+      articleSponsorTags: savedDesign.articleSponsorTags || {},
+      mastheadStaff: savedDesign.mastheadStaff || DEFAULT_ISSUE_DESIGN.mastheadStaff,
     });
 
     setMessage('Editando maquetación de: ' + issue.title);
@@ -860,6 +1031,67 @@ export default function IssueBuilder() {
               />
             </label>
 
+            {/* 3.5. CRÉDITOS EDITORIALES / MASTHEAD INSTITUCIONAL (PÁGINA 03 - ENFRENTADA AL SUMARIO) */}
+            <div className="wide" style={{ borderBottom: '1px solid #e7ded5', paddingBottom: 10, marginTop: 18 }}>
+              <div className="eyebrow">PASO 3.5 · CRÉDITOS EDITORIALES &amp; MASTHEAD INSTITUCIONAL (PÁGINA 03 - ENFRENTADA AL SUMARIO)</div>
+            </div>
+
+            <div className="wide" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, background: '#faf7f2', padding: 16, border: '1px solid #e7ded5' }}>
+              <label style={{ margin: 0 }}>
+                DIRECCIÓN EDITORIAL
+                <input
+                  value={design.mastheadStaff?.director || ''}
+                  onChange={(e) => setMastheadField('director', e.target.value)}
+                  placeholder="Dirección Editorial GLAMORA"
+                />
+              </label>
+
+              <label style={{ margin: 0 }}>
+                ARTE &amp; TIPOGRAFÍA DIDONE
+                <input
+                  value={design.mastheadStaff?.artDirection || ''}
+                  onChange={(e) => setMastheadField('artDirection', e.target.value)}
+                  placeholder="Estudio de Arte Didone"
+                />
+              </label>
+
+              <label style={{ margin: 0 }}>
+                MODA &amp; ESTILISMO
+                <input
+                  value={design.mastheadStaff?.fashionDirector || ''}
+                  onChange={(e) => setMastheadField('fashionDirector', e.target.value)}
+                  placeholder="Atelier de Moda & Coberturas"
+                />
+              </label>
+
+              <label style={{ margin: 0 }}>
+                CRÓNICA, SOCIEDAD &amp; GOURMET
+                <input
+                  value={design.mastheadStaff?.editorialStaff || ''}
+                  onChange={(e) => setMastheadField('editorialStaff', e.target.value)}
+                  placeholder="Crónica, Sociedad y Estilo de Vida"
+                />
+              </label>
+
+              <label style={{ margin: 0 }}>
+                FOTOGRAFÍA EDITORIAL &amp; AUTOR
+                <input
+                  value={design.mastheadStaff?.photoContributors || ''}
+                  onChange={(e) => setMastheadField('photoContributors', e.target.value)}
+                  placeholder="Fotografía de Autor & Colaboradores"
+                />
+              </label>
+
+              <label style={{ margin: 0 }}>
+                CORRESPONSALÍAS BOLIVIA E INTERNACIONAL
+                <input
+                  value={design.mastheadStaff?.cityCorrespondents || ''}
+                  onChange={(e) => setMastheadField('cityCorrespondents', e.target.value)}
+                  placeholder="Cochabamba · La Paz · Santa Cruz · Internacional"
+                />
+              </label>
+            </div>
+
             {/* 4. SELECCIÓN Y MAQUETACIÓN PÁGINA POR PÁGINA */}
             <div className="wide" style={{ borderBottom: '1px solid #e7ded5', paddingBottom: 10, marginTop: 18 }}>
               <div className="eyebrow">
@@ -1114,6 +1346,34 @@ export default function IssueBuilder() {
                               alignItems: 'start',
                             }}
                           >
+                            {/* Control 0: Fascículo Temático Editorial */}
+                            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: '#711c32', letterSpacing: 0.5 }}>
+                                FASCÍCULO EDITORIAL
+                              </span>
+                              <select
+                                value={design.articleFascicles?.[articleId] || 'moda-atelier'}
+                                onChange={(e) => setArticleFascicle(articleId, e.target.value as FascicleKind)}
+                                style={{
+                                  padding: '8px 10px',
+                                  border: '1px solid #711c32',
+                                  background: '#fffdfa',
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  color: '#18141c',
+                                }}
+                              >
+                                {FASCICLE_OPTIONS.map((fOpt) => (
+                                  <option key={fOpt.value} value={fOpt.value}>
+                                    {fOpt.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <span style={{ fontSize: 10.5, color: '#8a7c73', fontStyle: 'italic', marginTop: 2 }}>
+                                {FASCICLE_OPTIONS.find((f) => f.value === (design.articleFascicles?.[articleId] || 'moda-atelier'))?.desc}
+                              </span>
+                            </label>
+
                             {/* Control 1: Plantilla Visual de Doble Página */}
                             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, margin: 0 }}>
                               <span style={{ fontSize: 11, fontWeight: 700, color: '#3d342f', letterSpacing: 0.5 }}>
@@ -1314,6 +1574,212 @@ export default function IssueBuilder() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Control: Auspicio / Marca Colaboradora Discreta */}
+                          <div
+                            style={{
+                              marginTop: 6,
+                              padding: '10px 14px',
+                              background: '#faf6f0',
+                              border: '1px solid #e5ded5',
+                            }}
+                          >
+                            <label
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                margin: 0,
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#3d342f',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={design.articleSponsorTags?.[articleId]?.active || false}
+                                onChange={(e) =>
+                                  setArticleSponsorTag(articleId, { active: e.target.checked })
+                                }
+                              />
+                              <span>Vincular Auspicio o Colaboración con Marca en este artículo</span>
+                            </label>
+
+                            {design.articleSponsorTags?.[articleId]?.active && (
+                              <div
+                                style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                                  gap: 12,
+                                  marginTop: 10,
+                                }}
+                              >
+                                <label style={{ margin: 0, fontSize: 11 }}>
+                                  NOMBRE DE LA MARCA / PATROCINADOR
+                                  <input
+                                    value={design.articleSponsorTags?.[articleId]?.brandName || ''}
+                                    onChange={(e) =>
+                                      setArticleSponsorTag(articleId, { brandName: e.target.value })
+                                    }
+                                    placeholder="Ej: Dior, Chandon, Rolex"
+                                    style={{ padding: '6px 10px', fontSize: 12, width: '100%', boxSizing: 'border-box' }}
+                                  />
+                                </label>
+                                <label style={{ margin: 0, fontSize: 11 }}>
+                                  ETIQUETA EDITORIAL
+                                  <input
+                                    value={design.articleSponsorTags?.[articleId]?.roleLabel || 'En colaboración con'}
+                                    onChange={(e) =>
+                                      setArticleSponsorTag(articleId, { roleLabel: e.target.value })
+                                    }
+                                    placeholder="Ej: En colaboración con, Presentado por"
+                                    style={{ padding: '6px 10px', fontSize: 12, width: '100%', boxSizing: 'border-box' }}
+                                  />
+                                </label>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Control: Bodegón de Moda & Wishlist PNG con Transparencias */}
+                          {(currentStyle === 'wishlist-png' ||
+                            (design.articleFascicles?.[articleId] || 'moda-atelier') === 'moda-atelier') && (
+                            <div
+                              style={{
+                                marginTop: 6,
+                                padding: '12px 14px',
+                                background: '#fff',
+                                border: '1px solid #dfd5ca',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  marginBottom: 10,
+                                  flexWrap: 'wrap',
+                                  gap: 8,
+                                }}
+                              >
+                                <div>
+                                  <strong style={{ fontSize: 12, color: '#711c32', letterSpacing: 0.5 }}>
+                                    ✨ BODEGÓN DE MODA &amp; OBJETOS DE DESEO (WISHLIST PNG)
+                                  </strong>
+                                  <p style={{ margin: '2px 0 0 0', fontSize: 11, color: '#6e645f' }}>
+                                    Añade piezas, accesorios o calzado en PNG transparente para exhibirlos flotando con precios en la página izquierda.
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => addWishlistItem(articleId)}
+                                  className="text-link"
+                                  style={{
+                                    fontSize: 11,
+                                    padding: '5px 10px',
+                                    background: '#f5efe8',
+                                    border: '1px solid #d4c5b9',
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  + AÑADIR PIEZA PNG
+                                </button>
+                              </div>
+
+                              {(!design.articleWishlistItems?.[articleId] ||
+                                design.articleWishlistItems[articleId].length === 0) ? (
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#8a7c73',
+                                    fontStyle: 'italic',
+                                    padding: 8,
+                                    background: '#faf8f5',
+                                  }}
+                                >
+                                  No hay piezas añadidas aún. Si dejas la lista vacía, el pliego usará la fotografía de apertura como presentación noble.
+                                </div>
+                              ) : (
+                                <div style={{ display: 'grid', gap: 10 }}>
+                                  {design.articleWishlistItems[articleId].map((item, wIdx) => (
+                                    <div
+                                      key={item.id || wIdx}
+                                      style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '40px 1fr 1fr 100px auto',
+                                        gap: 10,
+                                        alignItems: 'center',
+                                        padding: 8,
+                                        background: '#faf8f5',
+                                        border: '1px solid #e8e0d8',
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          width: 36,
+                                          height: 36,
+                                          background: '#eee',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          overflow: 'hidden',
+                                          border: '1px solid #ddd',
+                                        }}
+                                      >
+                                        {item.pngUrl ? (
+                                          <img
+                                            src={item.pngUrl}
+                                            alt={item.item}
+                                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                                          />
+                                        ) : (
+                                          <span style={{ fontSize: 9, color: '#999' }}>PNG</span>
+                                        )}
+                                      </div>
+
+                                      <input
+                                        value={item.brand}
+                                        onChange={(e) => updateWishlistItem(articleId, wIdx, 'brand', e.target.value)}
+                                        placeholder="Maison (ej: DIOR)"
+                                        style={{ padding: '5px 8px', fontSize: 11 }}
+                                      />
+
+                                      <input
+                                        value={item.item}
+                                        onChange={(e) => updateWishlistItem(articleId, wIdx, 'item', e.target.value)}
+                                        placeholder="Pieza (ej: Saddle Bag de Piel)"
+                                        style={{ padding: '5px 8px', fontSize: 11 }}
+                                      />
+
+                                      <input
+                                        value={item.price || ''}
+                                        onChange={(e) => updateWishlistItem(articleId, wIdx, 'price', e.target.value)}
+                                        placeholder="Precio (ej: 2.800 USD)"
+                                        style={{ padding: '5px 8px', fontSize: 11 }}
+                                      />
+
+                                      <button
+                                        type="button"
+                                        onClick={() => removeWishlistItem(articleId, wIdx)}
+                                        style={{ background: 'none', border: 'none', color: '#a00', cursor: 'pointer', fontSize: 14 }}
+                                        title="Eliminar pieza"
+                                      >
+                                        ✕
+                                      </button>
+
+                                      <div style={{ gridColumn: '2 / -1' }}>
+                                        <input
+                                          value={item.pngUrl}
+                                          onChange={(e) => updateWishlistItem(articleId, wIdx, 'pngUrl', e.target.value)}
+                                          placeholder="URL de imagen PNG transparente (https://... o /brand/...)"
+                                          style={{ padding: '4px 8px', fontSize: 10.5, width: '100%', boxSizing: 'border-box' }}
+                                        />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}

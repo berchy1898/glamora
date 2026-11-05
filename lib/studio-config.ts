@@ -8,6 +8,10 @@ import {
   type SpreadLayoutStyle,
   type PhotoEditorialFilter,
   type PhotoFocalPoint,
+  type FascicleKind,
+  type FashionWishlistItem,
+  type ArticleSponsorTag,
+  type MastheadStaffConfig,
 } from '@/lib/issue-design-types';
 
 export {
@@ -17,6 +21,10 @@ export {
   type SpreadLayoutStyle,
   type PhotoEditorialFilter,
   type PhotoFocalPoint,
+  type FascicleKind,
+  type FashionWishlistItem,
+  type ArticleSponsorTag,
+  type MastheadStaffConfig,
 };
 
 export type StudioSocialLinks = Record<SocialPlatform, string>;

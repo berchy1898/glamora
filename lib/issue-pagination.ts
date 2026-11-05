@@ -1,5 +1,12 @@
 import { extractEditorialVideo } from './editorial-video';
-import type { IssueDesignConfig, SpreadLayoutStyle } from './issue-design-types';
+import type {
+  IssueDesignConfig,
+  SpreadLayoutStyle,
+  FascicleKind,
+  FashionWishlistItem,
+  ArticleSponsorTag,
+  MastheadStaffConfig,
+} from './issue-design-types';
 
 export type IssueArticleItem = {
   id: string;
@@ -157,6 +164,9 @@ export type ArticleSpreadDescriptor = {
   rightKind: 'opening' | 'continuation' | 'conclusion';
   rightBlocks: EditorialBlock[];
   hasMoreAfter: boolean;
+  fascicleKind?: FascicleKind;
+  sponsorTag?: ArticleSponsorTag;
+  wishlistItems?: FashionWishlistItem[];
 };
 
 export type ArticleSpreadPlan = {
@@ -168,13 +178,16 @@ export type ArticleSpreadPlan = {
   pageRangeLabel: string;
   spreads: ArticleSpreadDescriptor[];
   allPhotos: EditorialPhoto[];
+  fascicleKind?: FascicleKind;
+  sponsorTag?: ArticleSponsorTag;
+  wishlistItems?: FashionWishlistItem[];
 };
 
 export type PageSlotDefinition =
   | { type: 'cover'; pageNumber: number }
   | { type: 'letter'; pageNumber: number }
   | { type: 'toc'; pageNumber: number }
-  | { type: 'sponsor'; pageNumber: number }
+  | { type: 'sponsor'; pageNumber: number; mastheadStaff?: MastheadStaffConfig }
   | {
       type: 'article-page';
       pageNumber: number;
@@ -278,12 +291,46 @@ export function buildIssuePaginationPlan(
   pages.push({ type: 'cover', pageNumber: 0 });
   pages.push({ type: 'letter', pageNumber: 1 });
   pages.push({ type: 'toc', pageNumber: 2 });
-  pages.push({ type: 'sponsor', pageNumber: 3 });
+  pages.push({
+    type: 'sponsor',
+    pageNumber: 3,
+    mastheadStaff: design?.mastheadStaff,
+  });
 
   let currentPage = 4;
 
   for (const art of articles) {
     const { blocks, inlinePhotos } = parseEditorialBlocks(art.body);
+
+    // Detección de Fascículo (Moda/Atelier, Sociedad/Galas, Diálogos/Entrevistas, Gourmet/Lifestyle)
+    const rawFascicle =
+      design?.articleFascicles?.[art.id] ||
+      (art.slug ? design?.articleFascicles?.[art.slug] : undefined);
+
+    let fascicleKind: FascicleKind = 'moda-atelier';
+    if (rawFascicle) {
+      fascicleKind = rawFascicle;
+    } else {
+      const cat = (art.category || '').toLowerCase();
+      if (cat.includes('soc') || cat.includes('gal') || cat.includes('fies') || cat.includes('event')) {
+        fascicleKind = 'sociedad-gala';
+      } else if (cat.includes('entrev') || cat.includes('dial') || cat.includes('perf')) {
+        fascicleKind = 'dialogos-entrevista';
+      } else if (cat.includes('gour') || cat.includes('gast') || cat.includes('rest') || cat.includes('vino')) {
+        fascicleKind = 'gourmet-lifestyle';
+      } else {
+        fascicleKind = 'moda-atelier';
+      }
+    }
+
+    const sponsorTag =
+      design?.articleSponsorTags?.[art.id] ||
+      (art.slug ? design?.articleSponsorTags?.[art.slug] : undefined);
+
+    const wishlistItems =
+      design?.articleWishlistItems?.[art.id] ||
+      (art.slug ? design?.articleWishlistItems?.[art.slug] : undefined) ||
+      [];
 
     // 1. Recolección integral de todas las fotografías disponibles
     const allPhotos: EditorialPhoto[] = [];
@@ -393,6 +440,9 @@ export function buildIssuePaginationPlan(
         rightKind: isFirst ? 'opening' : isLast ? 'conclusion' : 'continuation',
         rightBlocks,
         hasMoreAfter: !isLast,
+        fascicleKind,
+        sponsorTag,
+        wishlistItems,
       };
 
       spreads.push(spreadDescriptor);
@@ -407,6 +457,9 @@ export function buildIssuePaginationPlan(
       pageRangeLabel,
       spreads,
       allPhotos,
+      fascicleKind,
+      sponsorTag,
+      wishlistItems,
     };
 
     articlePlans.push(plan);

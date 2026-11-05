@@ -177,6 +177,18 @@ export default async function Issue({
                   paginationPlan.articlePageMap[art.slug];
                 const pageLabel =
                   pageInfo?.pageRangeLabel || `PÁG. ${String(index + 1).padStart(2, '0')}`;
+                const artPlan = paginationPlan.articlePlans.find((p) => p.article.id === art.id);
+                const fascicleKind = artPlan?.fascicleKind;
+                const fascicleBadge =
+                  fascicleKind === 'moda-atelier'
+                    ? '👗 MODA & ATELIER'
+                    : fascicleKind === 'sociedad-gala'
+                    ? '🥂 SOCIEDAD & GALAS'
+                    : fascicleKind === 'dialogos-entrevista'
+                    ? '🎙️ DIÁLOGOS'
+                    : fascicleKind === 'gourmet-lifestyle'
+                    ? '🍷 GOURMET'
+                    : null;
 
                 return (
                   <li key={`toc-${art.id}`} className="issue-toc-item">
@@ -190,6 +202,7 @@ export default async function Issue({
                         <span className="issue-toc-meta">
                           {[
                             isCover ? 'COVER STORY' : null,
+                            fascicleBadge,
                             art.category,
                             art.city,
                           ]

@@ -52,6 +52,13 @@ const PALETTE_COLOR: Record<string, string> = {
   burgundy: '#8f243e',
 };
 
+const FASCICLE_LABELS: Record<string, { label: string; icon: string }> = {
+  'moda-atelier': { label: 'MODA & ATELIER', icon: '👗' },
+  'sociedad-gala': { label: 'SOCIEDAD & GALAS', icon: '🥂' },
+  'dialogos-entrevista': { label: 'DIÁLOGOS & ENTREVISTAS', icon: '🎙️' },
+  'gourmet-lifestyle': { label: 'GOURMET & LIFESTYLE', icon: '🍷' },
+};
+
 export function InteractiveIssueReader({
   issueNumber,
   issueTitle,
@@ -308,7 +315,7 @@ export function InteractiveIssueReader({
       );
     }
 
-    // 2 = Sumario (TOC) Dinámico
+    // 2 = Sumario (TOC) Dinámico con Fascículos
     if (pageIdx === 2 || slotDef?.type === 'toc') {
       return (
         <div className={`mag-page ${slotClass}`}>
@@ -321,6 +328,7 @@ export function InteractiveIssueReader({
               {paginationPlan.articlePlans.map((plan) => {
                 const art = plan.article;
                 const isCover = art.id === coverStoryId || plan.startPage === 4;
+                const fascicleInfo = plan.fascicleKind ? FASCICLE_LABELS[plan.fascicleKind] : undefined;
                 return (
                   <li key={art.id}>
                     <button
@@ -332,16 +340,24 @@ export function InteractiveIssueReader({
                         {plan.pageRangeLabel}
                       </span>
                       <div className="mag-toc-info">
-                        <small>
-                          {[
-                            isCover ? 'COVER STORY' : null,
-                            art.category,
-                            art.city,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')
-                            .toUpperCase()}
-                        </small>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '2px' }}>
+                          {fascicleInfo && (
+                            <span className="mag-fascicle-badge">
+                              <span>{fascicleInfo.icon}</span>
+                              <span>{fascicleInfo.label}</span>
+                            </span>
+                          )}
+                          <small>
+                            {[
+                              isCover ? 'COVER STORY' : null,
+                              art.category,
+                              art.city,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')
+                              .toUpperCase()}
+                          </small>
+                        </div>
                         <strong>{art.title}</strong>
                       </div>
                       <span className="mag-toc-go">LEER →</span>
@@ -359,50 +375,95 @@ export function InteractiveIssueReader({
       );
     }
 
-    // 3 = Patrocinador Oficial o Editorial Standard
+    // 3 = Créditos Editoriales / Masthead & Patrocinador Oficial (Frente al Sumario)
     if (pageIdx === 3 || slotDef?.type === 'sponsor') {
+      const staff = mergedDesign.mastheadStaff || DEFAULT_ISSUE_DESIGN.mastheadStaff;
       return (
         <div className={`mag-page ${slotClass}`}>
-          <div className="mag-page-inner mag-sponsor-or-letter">
+          <div className="mag-masthead-page">
+            <div>
+              <div className="mag-masthead-header">
+                <div className="mag-masthead-monogram-title">
+                  <strong>GLAMORA</strong>
+                  <small>EDICIÓN DIGITAL &amp; IMPRESA</small>
+                </div>
+                <small style={{ fontSize: '8px', letterSpacing: '0.14em', color: '#8c7366' }}>
+                  Nº {formattedIssueNum} · {design.editionBadge || 'BOLIVIA'}
+                </small>
+              </div>
+
+              <div className="mag-masthead-grid">
+                <div className="mag-masthead-col">
+                  <h5>Dirección Editorial</h5>
+                  <p>{staff?.director || 'Dirección Editorial GLAMORA'}</p>
+                </div>
+                <div className="mag-masthead-col">
+                  <h5>Arte &amp; Tipografía</h5>
+                  <p>{staff?.artDirection || 'Estudio de Arte Didone'}</p>
+                </div>
+                <div className="mag-masthead-col">
+                  <h5>Moda &amp; Estilismo</h5>
+                  <p>{staff?.fashionDirector || 'Atelier de Moda & Coberturas'}</p>
+                </div>
+                <div className="mag-masthead-col">
+                  <h5>Crónica &amp; Sociedad</h5>
+                  <p>{staff?.editorialStaff || 'Crónica, Sociedad y Estilo de Vida'}</p>
+                </div>
+                <div className="mag-masthead-col">
+                  <h5>Fotografía de Autor</h5>
+                  <p>{staff?.photoContributors || 'Fotografía de Autor & Colaboradores'}</p>
+                </div>
+                <div className="mag-masthead-col">
+                  <h5>Corresponsalías</h5>
+                  <p>{staff?.cityCorrespondents || 'Cochabamba · La Paz · Santa Cruz · Internacional'}</p>
+                </div>
+              </div>
+
+              <div className="mag-masthead-credo">
+                “Cada edición de GLAMORA es concebida como un objeto de colección: una mirada profunda a la elegancia contemporánea, el diseño boliviano y los protagonistas de nuestra escena cultural.”
+              </div>
+            </div>
+
             {featuredSponsor ? (
-              <div className="mag-ad-spread">
-                <span className="mag-ad-badge">
-                  PATROCINADOR OFICIAL · GLAMORA PARTNER
-                </span>
+              <div className="mag-masthead-sponsor-box">
                 {featuredSponsor.image_url && (
-                  <div className="mag-ad-image">
-                    <img
-                      src={featuredSponsor.image_url}
-                      alt={featuredSponsor.brand_name}
-                      draggable={false}
-                    />
-                  </div>
+                  <img
+                    src={featuredSponsor.image_url}
+                    alt={featuredSponsor.brand_name}
+                    draggable={false}
+                  />
                 )}
-                <h4>{featuredSponsor.brand_name}</h4>
-                {featuredSponsor.tagline && <p>{featuredSponsor.tagline}</p>}
-                {featuredSponsor.cta_url && (
-                  <a
-                    href={featuredSponsor.cta_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mag-ad-cta"
-                  >
-                    {featuredSponsor.cta_label || 'DESCUBRIR MARCA'} ↗
-                  </a>
-                )}
+                <div className="mag-masthead-sponsor-info">
+                  <small>PATROCINADOR OFICIAL · MAISON ASOCIADA</small>
+                  <strong>{featuredSponsor.brand_name}</strong>
+                  {featuredSponsor.cta_url && (
+                    <a
+                      href={featuredSponsor.cta_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'block',
+                        fontSize: '9px',
+                        letterSpacing: '0.15em',
+                        color: '#711c32',
+                        marginTop: '3px',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                      }}
+                    >
+                      {featuredSponsor.cta_label || 'CONOCER MÁS'} ↗
+                    </a>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="mag-editorial-letter">
-                <span className="mag-kicker">THE GLAMORA STANDARD</span>
-                <h3>Periodismo visual, moda, cultura y sociedad.</h3>
-                <p>
-                  Cada historia ha sido maquetada preservando íntegramente la crónica, la proporción fotográfica original y el rigor estético de nuestras coberturas de sociedad y moda contemporánea.
-                </p>
+              <div style={{ borderTop: '1px solid #e5ded5', paddingTop: '10px', fontSize: '8.5px', color: '#8c7366', letterSpacing: '0.12em' }}>
+                DEPÓSITO LEGAL EDITORIAL · TODOS LOS DERECHOS RESERVADOS · GLAMORA BOLIVIA
               </div>
             )}
           </div>
           <footer className="mag-page-folio">
-            <span>{featuredSponsor ? 'PUBLICIDAD EXCLUSIVA' : 'GLAMORA'}</span>
+            <span>CRÉDITOS &amp; MASTHEAD INSTITUCIONAL</span>
             <span>PÁG. 03</span>
           </footer>
         </div>
@@ -707,7 +768,215 @@ export function InteractiveIssueReader({
             );
           }
 
-          // 6. Glamora Classic Fashion Plate (Lámina Noble a Página Completa)
+          // 6. Wishlist Haute Couture / Bodegón de Prendas PNG
+          if (currentLayout === 'wishlist-png') {
+            const wishlistItems =
+              spreadDescriptor.wishlistItems && spreadDescriptor.wishlistItems.length > 0
+                ? spreadDescriptor.wishlistItems
+                : [
+                    {
+                      id: 'sample-1',
+                      pngUrl: primaryPhoto,
+                      brand: 'GLAMORA ATELIER',
+                      item: currentArticle.title.slice(0, 36),
+                      price: 'Pieza Exclusiva',
+                    },
+                  ];
+
+            return (
+              <div className={`mag-page mag-wishlist-plate ${slotClass}`}>
+                <div className="mag-wishlist-inner">
+                  <div className="mag-wishlist-header">
+                    <span className="mag-kicker">ATELIER EDITORIAL · SELECCIÓN DE MODA</span>
+                    <h3 className="mag-wishlist-title">Objetos de Deseo &amp; Siluetas</h3>
+                    <p className="mag-wishlist-subtitle">Piezas esenciales, accesorios y detalles de alta manufactura.</p>
+                  </div>
+
+                  <div className="mag-wishlist-stage">
+                    {wishlistItems.slice(0, 3).map((item, itemIdx) => (
+                      <div key={item.id || itemIdx} className={`mag-wishlist-item mag-wishlist-item-${itemIdx + 1}`}>
+                        <div className="mag-wishlist-badge">0{itemIdx + 1}</div>
+                        <div className="mag-wishlist-img-frame">
+                          <img
+                            src={item.pngUrl}
+                            alt={item.item}
+                            className="mag-wishlist-png"
+                            draggable={false}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mag-wishlist-credits">
+                    {wishlistItems.slice(0, 3).map((item, itemIdx) => (
+                      <div key={item.id || itemIdx} className="mag-wishlist-credit-row">
+                        <span className="mag-credit-num">0{itemIdx + 1}.</span>
+                        <strong className="mag-credit-brand">{item.brand.toUpperCase()}</strong>
+                        <span className="mag-credit-name">{item.item}</span>
+                        {item.price && <span className="mag-credit-price">{item.price}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                    <span className="mag-sponsor-folio-pill">
+                      ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                    </span>
+                  ) : (
+                    <span>GLAMORA · THE LUXURY WISHLIST</span>
+                  )}
+                </footer>
+              </div>
+            );
+          }
+
+          // 7. The Interview (Conversación Monumental Didone)
+          if (currentLayout === 'the-interview') {
+            return (
+              <div className={`mag-page ${slotClass}`} style={{ background: '#18141c', color: '#fbf7f2' }}>
+                <div style={{ padding: '24px 26px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                  <div>
+                    <span className="mag-interview-badge" style={{ color: '#dfba73', borderColor: '#dfba73' }}>
+                      DIÁLOGOS &amp; CONVERSACIONES DE AUTOR
+                    </span>
+                    <div style={{ position: 'relative', marginTop: 10 }}>
+                      <div style={{ width: '100%', height: 210, overflow: 'hidden', border: '1px solid rgba(223, 186, 115, 0.3)' }}>
+                        <img
+                          src={primaryPhoto}
+                          alt={currentArticle.title}
+                          draggable={false}
+                          className={filterStyleClass}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
+                        />
+                      </div>
+                      <div style={{ position: 'absolute', bottom: -10, left: 14, background: '#711c32', color: '#fff', fontSize: '8.5px', letterSpacing: '0.18em', padding: '3px 8px', fontWeight: 700 }}>
+                        {currentArticle.author ? `ENTREVISTA POR ${currentArticle.author.toUpperCase()}` : 'GLAMORA DIALOGUES'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 'auto', paddingTop: '16px' }}>
+                    <span style={{ fontFamily: "'Didot', 'Playfair Display', serif", fontSize: '38px', color: '#dfba73', lineHeight: 0.8, display: 'block' }}>“</span>
+                    <p style={{ fontFamily: "'Didot', 'Playfair Display', Georgia, serif", fontSize: '12.5px', lineHeight: 1.45, color: '#f4ede6', fontStyle: 'italic', margin: '4px 0 0 0' }}>
+                      {currentArticle.excerpt || 'Conversación íntima sobre creación, estética y el pulso cultural de nuestra época.'}
+                    </p>
+                  </div>
+                </div>
+                <footer className="mag-page-folio" style={{ color: '#baa89b', borderTopColor: 'rgba(255,255,255,0.1)' }}>
+                  <span>PÁG. {pageNumFormatted}</span>
+                  {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                    <span className="mag-sponsor-folio-pill">
+                      ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                    </span>
+                  ) : (
+                    <span>GLAMORA · DIÁLOGOS</span>
+                  )}
+                </footer>
+              </div>
+            );
+          }
+
+          // 8. The Taste (Crítica Gastronómica & Vinos)
+          if (currentLayout === 'the-taste') {
+            return (
+              <div className={`mag-page ${slotClass}`} style={{ background: '#f8f4ee' }}>
+                <div style={{ padding: '22px 24px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #dcd1c6', paddingBottom: '6px', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '8.5px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#711c32', fontWeight: 700 }}>
+                        CRÓNICA GASTRONÓMICA &amp; VINOS
+                      </span>
+                      <span style={{ fontSize: '8.5px', letterSpacing: '0.14em', color: '#8a7c73' }}>
+                        {(currentArticle.city || 'BOLIVIA').toUpperCase()}
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: 210, position: 'relative', overflow: 'hidden', border: '1px solid #dcd1c6' }}>
+                      <img
+                        src={primaryPhoto}
+                        alt={currentArticle.title}
+                        draggable={false}
+                        className={filterStyleClass}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
+                      />
+                      {vignetteOverlay && <div style={vignetteOverlay} />}
+                      {grainOverlay && <div style={grainOverlay} />}
+                    </div>
+                    <div className="mag-taste-seal">
+                      <span>★ ★ ★ ★ ★ SELECCIÓN GOURMET</span>
+                      <strong>{currentArticle.venue || 'MESA DE AUTOR'}</strong>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 'auto', background: '#ffffff', border: '1px solid #e7ded5', padding: '8px 12px' }}>
+                    <strong style={{ display: 'block', fontSize: '8.5px', letterSpacing: '0.16em', color: '#711c32', textTransform: 'uppercase', marginBottom: '2px' }}>
+                      Nota de Cata &amp; Atmósfera
+                    </strong>
+                    <p style={{ fontSize: '10px', color: '#524541', margin: 0, fontStyle: 'italic', lineHeight: 1.4 }}>
+                      {currentArticle.excerpt || 'Maridaje de altura, ingredientes locales y hospitalidad distinguida.'}
+                    </p>
+                  </div>
+                </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                    <span className="mag-sponsor-folio-pill">
+                      ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                    </span>
+                  ) : (
+                    <span>GLAMORA · GOURMET &amp; LIFESTYLE</span>
+                  )}
+                </footer>
+              </div>
+            );
+          }
+
+          // 9. Haute Couture Spread (Pase de Pasarela & Atelier Didone)
+          if (currentLayout === 'haute-couture-spread') {
+            return (
+              <div className={`mag-page ${slotClass}`} style={{ background: '#fdfbf9' }}>
+                <div style={{ padding: '22px 24px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxSizing: 'border-box' }}>
+                  <div style={{ borderBottom: '1px solid #decbbd', paddingBottom: '6px' }}>
+                    <span style={{ fontSize: '8.5px', letterSpacing: '0.24em', textTransform: 'uppercase', color: '#711c32', fontWeight: 700 }}>
+                      HAUTE COUTURE ÉDITION · ATELIER
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, position: 'relative', margin: '12px 0', border: '1px solid #dfd5ca', padding: '6px', background: '#ffffff' }}>
+                    <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+                      <img
+                        src={primaryPhoto}
+                        alt={currentArticle.title}
+                        draggable={false}
+                        className={filterStyleClass}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: focalPoint, ...(customFilterCss ? { filter: customFilterCss } : {}) }}
+                      />
+                      {vignetteOverlay && <div style={vignetteOverlay} />}
+                      {grainOverlay && <div style={grainOverlay} />}
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 12, right: 12, background: 'rgba(24, 20, 28, 0.85)', color: '#dfba73', fontSize: '8px', letterSpacing: '0.14em', padding: '2px 8px', textTransform: 'uppercase' }}>
+                      {(currentArticle.category || 'COLECCIÓN').toUpperCase()}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '8.5px', color: '#7c6d64' }}>
+                    <span>FOTOGRAFÍA EDITORIAL EXCLUSIVA</span>
+                    <span style={{ fontStyle: 'italic' }}>{(currentArticle.city || 'BOLIVIA').toUpperCase()}</span>
+                  </div>
+                </div>
+                <footer className="mag-page-folio">
+                  <span>PÁG. {pageNumFormatted}</span>
+                  {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                    <span className="mag-sponsor-folio-pill">
+                      ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                    </span>
+                  ) : (
+                    <span>GLAMORA · ATELIER DE HAUTE COUTURE</span>
+                  )}
+                </footer>
+              </div>
+            );
+          }
+
+          // 10. Glamora Classic Fashion Plate (Lámina Noble a Página Completa)
           return (
             <div className={`mag-page mag-vogue-classic-left ${slotClass}`}>
               <div className="mag-classic-fashion-plate" style={{ position: 'relative' }}>
@@ -727,7 +996,13 @@ export function InteractiveIssueReader({
               </div>
               <footer className="mag-page-folio">
                 <span>PÁG. {pageNumFormatted}</span>
-                <span>GLAMORA · HAUTE ÉDITION</span>
+                {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                  <span className="mag-sponsor-folio-pill">
+                    ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                  </span>
+                ) : (
+                  <span>GLAMORA · HAUTE ÉDITION</span>
+                )}
               </footer>
             </div>
           );
@@ -988,7 +1263,15 @@ export function InteractiveIssueReader({
               className="mag-page-folio"
               style={isCinemaRight ? { color: '#baa89b' } : {}}
             >
-              <span>GLAMORA · {issueTitle.toUpperCase()}</span>
+              <span>
+                {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                  <span className="mag-sponsor-folio-pill">
+                    ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                  </span>
+                ) : (
+                  `GLAMORA · ${issueTitle.toUpperCase()}`
+                )}
+              </span>
               <span>PÁG. {pageNumFormatted}</span>
             </footer>
           </div>
@@ -1088,7 +1371,15 @@ export function InteractiveIssueReader({
             className="mag-page-folio"
             style={isCinemaRight ? { color: '#baa89b' } : {}}
           >
-            <span>GLAMORA · {issueTitle.toUpperCase()}</span>
+            <span>
+              {spreadDescriptor.sponsorTag?.active && spreadDescriptor.sponsorTag?.brandName ? (
+                <span className="mag-sponsor-folio-pill">
+                  ✦ {spreadDescriptor.sponsorTag.roleLabel || 'En colaboración con'} {spreadDescriptor.sponsorTag.brandName}
+                </span>
+              ) : (
+                `GLAMORA · ${issueTitle.toUpperCase()}`
+              )}
+            </span>
             <span>PÁG. {pageNumFormatted}</span>
           </footer>
         </div>

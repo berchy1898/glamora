@@ -283,6 +283,80 @@ test('7. Integridad de Límites y Sumario: Conexión perfecta entre artículos, 
   assert.strictEqual(plan.totalSpreads, plan.totalPages / 2);
 });
 
+// 8. Arquitectura Editorial: Fascículos, Bodegón Wishlist y Masthead Institucional
+test('8. Escaleta de Fascículos & Bodegón Wishlist: Clasifica fascículos, integra items PNG y créditos de masthead', () => {
+  const fashionArticle = {
+    id: 'art-fashion',
+    title: 'Siluetas de Otoño en Cochabamba',
+    slug: 'siluetas-otono',
+    body: 'Crónica del atelier y las nuevas piezas de autor.',
+    category: 'Alta Costura',
+  };
+  const galaArticle = {
+    id: 'art-gala',
+    title: 'Gala Anual de Arte Contemporáneo',
+    slug: 'gala-arte',
+    body: 'Los invitados más destacados de la noche.',
+    category: 'Eventos Sociales',
+  };
+
+  const customDesign = {
+    mastheadStaff: {
+      director: 'Dirección Editorial GLAMORA',
+      artDirection: 'Estudio de Arte Didone',
+      fashionDirector: 'Atelier de Moda',
+      editorialStaff: 'Crónica de Sociedad',
+      photoContributors: 'Fotografía de Autor',
+      cityCorrespondents: 'Cochabamba · La Paz · Santa Cruz',
+    },
+    articleFascicles: {
+      'art-fashion': 'moda-atelier',
+      'art-gala': 'sociedad-gala',
+    },
+    articleWishlistItems: {
+      'art-fashion': [
+        {
+          id: 'item-1',
+          pngUrl: 'https://images.glamora.com/png/bag.png',
+          brand: 'Dior',
+          item: 'Saddle Bag en piel de becerro',
+          price: '2.800 USD',
+        },
+      ],
+    },
+    articleSponsorTags: {
+      'art-gala': {
+        active: true,
+        brandName: 'Chandon',
+        roleLabel: 'En colaboración con',
+      },
+    },
+  };
+
+  const plan = buildIssuePaginationPlan([fashionArticle, galaArticle], customDesign);
+
+  // Verificar Page 3 (Masthead Staff)
+  const page3 = plan.pages[3];
+  assert.strictEqual(page3.type, 'sponsor');
+  assert.ok(page3.mastheadStaff, 'Página 3 debe contener créditos de masthead');
+  assert.strictEqual(page3.mastheadStaff.director, 'Dirección Editorial GLAMORA');
+
+  // Verificar Fascículo Moda & Atelier con Wishlist
+  const fashionPlan = plan.articlePlans[0];
+  assert.strictEqual(fashionPlan.fascicleKind, 'moda-atelier');
+  assert.strictEqual(fashionPlan.wishlistItems.length, 1);
+  assert.strictEqual(fashionPlan.wishlistItems[0].brand, 'Dior');
+  assert.strictEqual(fashionPlan.spreads[0].fascicleKind, 'moda-atelier');
+  assert.strictEqual(fashionPlan.spreads[0].wishlistItems[0].item, 'Saddle Bag en piel de becerro');
+
+  // Verificar Fascículo Sociedad & Gala con Sponsor Tag
+  const galaPlan = plan.articlePlans[1];
+  assert.strictEqual(galaPlan.fascicleKind, 'sociedad-gala');
+  assert.ok(galaPlan.sponsorTag);
+  assert.strictEqual(galaPlan.sponsorTag.brandName, 'Chandon');
+  assert.strictEqual(galaPlan.spreads[0].sponsorTag.roleLabel, 'En colaboración con');
+});
+
 console.log('\n======================================================');
-console.log(` RESULTADO: ${passedCount} de 7 pruebas pasaron exitosamente (100%).`);
+console.log(` RESULTADO: ${passedCount} pruebas pasaron exitosamente (100%).`);
 console.log('======================================================\n');

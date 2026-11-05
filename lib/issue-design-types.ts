@@ -1,12 +1,46 @@
 import type { PhotoAdjustments } from './photo-adjustments';
 
+export type FascicleKind =
+  | 'moda-atelier'
+  | 'sociedad-gala'
+  | 'dialogos-entrevista'
+  | 'gourmet-lifestyle';
+
+export type FashionWishlistItem = {
+  id: string;
+  pngUrl: string;
+  brand: string;
+  item: string;
+  price?: string;
+  notes?: string;
+};
+
+export type MastheadStaffConfig = {
+  director?: string;
+  artDirection?: string;
+  fashionDirector?: string;
+  editorialStaff?: string;
+  photoContributors?: string;
+  cityCorrespondents?: string;
+};
+
+export type ArticleSponsorTag = {
+  active: boolean;
+  brandName: string;
+  roleLabel: string;
+};
+
 export type SpreadLayoutStyle =
   | 'vogue-classic'
   | 'vogue-asymmetric'
   | 'vogue-collage'
   | 'cinema-bleed'
   | 'social-mosaic'
-  | 'editorial-quote';
+  | 'editorial-quote'
+  | 'wishlist-png'
+  | 'the-interview'
+  | 'the-taste'
+  | 'haute-couture-spread';
 
 export type PhotoEditorialFilter =
   | 'natural'
@@ -39,6 +73,11 @@ export type IssueDesignConfig = {
   articleFocalPoints?: Record<string, PhotoFocalPoint>;
   articleCoverOverrides?: Record<string, string>;
   articlePhotoAdjustments?: Record<string, PhotoAdjustments>;
+  // Estructura de Fascículos y Escaleta Editorial
+  articleFascicles?: Record<string, FascicleKind>;
+  articleWishlistItems?: Record<string, FashionWishlistItem[]>;
+  articleSponsorTags?: Record<string, ArticleSponsorTag>;
+  mastheadStaff?: MastheadStaffConfig;
 };
 
 export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {
@@ -57,4 +96,15 @@ export const DEFAULT_ISSUE_DESIGN: IssueDesignConfig = {
   articleFocalPoints: {},
   articleCoverOverrides: {},
   articlePhotoAdjustments: {},
+  articleFascicles: {},
+  articleWishlistItems: {},
+  articleSponsorTags: {},
+  mastheadStaff: {
+    director: 'Dirección Editorial GLAMORA',
+    artDirection: 'Estudio de Arte & Tipografía Didone',
+    fashionDirector: 'Atelier de Moda & Coberturas',
+    editorialStaff: 'Crónica, Sociedad y Estilo de Vida',
+    photoContributors: 'Fotografía Editorial & Colaboradores de Autor',
+    cityCorrespondents: 'Cochabamba · La Paz · Santa Cruz · Internacional',
+  },
 };
