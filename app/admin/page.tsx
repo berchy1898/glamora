@@ -34,6 +34,7 @@ import {
   type EditorialVideoAspect,
 } from '@/lib/editorial-video';
 import { AdminStudioSettingsPanel } from '@/components/AdminStudioSettingsPanel';
+import { EXPERT_HEADING_PRESETS, type ArticleEditorialMeta } from '@/lib/contributors';
 import { EditorialImageCropperModal } from '@/components/EditorialImageCropperModal';
 import { EditorialBodyRenderer } from '@/components/EditorialBodyRenderer';
 import { EditorialVideoPlayer } from '@/components/EditorialVideoPlayer';
@@ -47,6 +48,10 @@ const empty = {
   city: 'Cochabamba',
   cover_image: '',
   author: 'Glamora Editorial',
+  photographer: '',
+  coverage_by: '',
+  expert_heading: 'Conoce a nuestra experta',
+  expert_bio: '',
   is_published: false,
   editorial_status: 'draft' as 'draft' | 'review' | 'approved' | 'scheduled' | 'published',
   is_social: false,
@@ -205,6 +210,10 @@ export default function Admin() {
       city: a.city || 'Cochabamba',
       cover_image: a.cover_image || '',
       author: a.author || 'Glamora Editorial',
+      photographer: '',
+      coverage_by: '',
+      expert_heading: 'Conoce a nuestra experta',
+      expert_bio: '',
       is_published: Boolean(a.is_published),
       editorial_status: getEditorialStatus(a),
       is_social: Boolean(a.is_social),
@@ -227,6 +236,23 @@ export default function Admin() {
 
     setMessage('Editando: ' + (a.title || 'Artículo'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (a.slug) {
+      fetch('/api/studio-config')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((cfg) => {
+          const meta = cfg?.articleMeta?.[a.slug] as ArticleEditorialMeta | undefined;
+          if (!meta) return;
+          setForm((prev) => ({
+            ...prev,
+            photographer: meta.photographer || '',
+            coverage_by: meta.coverageBy || '',
+            expert_heading: meta.expertHeading || 'Conoce a nuestra experta',
+            expert_bio: meta.expertBio || '',
+          }));
+        })
+        .catch(() => undefined);
+    }
   }
 
   function cancelEdit() {
@@ -440,6 +466,10 @@ export default function Admin() {
         video_url,
         video_aspect,
         video_caption,
+        photographer,
+        coverage_by,
+        expert_heading,
+        expert_bio,
         ...fields
       } = form;
 
@@ -625,6 +655,24 @@ export default function Admin() {
           fields.slug,
           previousArticle?.slug
         );
+        try {
+          await fetch('/api/studio-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'save_article_meta',
+              slug: fields.slug,
+              meta: {
+                photographer,
+                coverageBy: coverage_by,
+                expertHeading: expert_heading,
+                expertBio: expert_bio,
+              },
+            }),
+          });
+        } catch {
+          // Non-fatal metadata sync
+        }
         setMessage(
           coverageSyncError
             ? `Artículo guardado, pero no se pudo sincronizar la cobertura: ${coverageSyncError.message}`
@@ -1991,12 +2039,58 @@ export default function Admin() {
             </div>
 
             <label>
-              AUTOR / FOTÓGRAFO
+              AUTOR / REDACTOR (TEXTO)
               <input
                 value={form.author}
                 onChange={(e) => update('author', e.target.value)}
+                placeholder="Ej. Valeria Mendoza o Glamora Editorial"
               />
             </label>
+
+            <label>
+              FOTÓGRAFO / CRÉDITO VISUAL (OPCIONAL)
+              <input
+                value={form.photographer}
+                onChange={(e) => update('photographer', e.target.value)}
+                placeholder="Ej. Mateo Rivas (enlace automático a su portafolio)"
+              />
+            </label>
+
+            <label>
+              COBERTURA / ENTREVISTA POR (OPCIONAL)
+              <input
+                value={form.coverage_by}
+                onChange={(e) => update('coverage_by', e.target.value)}
+                placeholder="Si alguien distinto realizó la cobertura o entrevista"
+              />
+            </label>
+
+            <div className="admin-field-span-2" style={{ borderTop: '1px solid rgba(21,19,26,.1)', paddingTop: 14, marginTop: 4 }}>
+              <label>
+                APARTADO ESTILO VOGUE · TÍTULO DE PERFIL (EXPERTA / EXPERTO / PROTAGONISTA)
+                <input
+                  list="expert-heading-presets"
+                  value={form.expert_heading}
+                  onChange={(e) => update('expert_heading', e.target.value)}
+                  placeholder="Conoce a nuestra experta"
+                />
+                <datalist id="expert-heading-presets">
+                  {EXPERT_HEADING_PRESETS.map((preset) => (
+                    <option key={preset} value={preset} />
+                  ))}
+                </datalist>
+              </label>
+
+              <label style={{ marginTop: 10, display: 'block' }}>
+                RESEÑA / EXPERIENCIA DEL EXPERTO O ENTREVISTADO (OPCIONAL)
+                <textarea
+                  rows={4}
+                  value={form.expert_bio}
+                  onChange={(e) => update('expert_bio', e.target.value)}
+                  placeholder="Ej. Peluquera de formación, Daphné Narcy se orientó hacia el cuidado capilar... (si se deja vacío, este apartado no se muestra en el artículo)"
+                />
+              </label>
+            </div>
 
             <label>
               ESTADO EDITORIAL

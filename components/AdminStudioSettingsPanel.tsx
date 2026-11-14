@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { SocialIcon, type SocialPlatform } from '@/components/SocialIcons';
 import { supabaseBrowser } from '@/lib/supabase-browser';
+import { slugifyContributorName, type ContributorProfile } from '@/lib/contributors';
 
 type SocialLinksState = Record<SocialPlatform, string>;
 
@@ -75,6 +76,18 @@ export function AdminStudioSettingsPanel() {
   const [saving, setSaving] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
+  const [contributors, setContributors] = useState<Record<string, ContributorProfile>>({});
+  const [contribForm, setContribForm] = useState<ContributorProfile>({
+    slug: '',
+    name: '',
+    role: 'Fotografía Editorial',
+    bio: '',
+    instagram: '',
+    linkedin: '',
+    website: '',
+  });
+  const [contribMsg, setContribMsg] = useState('');
+  const [savingContrib, setSavingContrib] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +117,9 @@ export function AdminStudioSettingsPanel() {
                 0
               );
               setTotalViews(sum);
+            }
+            if (active && apiData?.contributors && typeof apiData.contributors === 'object') {
+              setContributors(apiData.contributors as Record<string, ContributorProfile>);
             }
           }
         } catch {
@@ -157,6 +173,67 @@ export function AdminStudioSettingsPanel() {
       active = false;
     };
   }, []);
+
+  async function handleSaveContributor(e: React.FormEvent) {
+    e.preventDefault();
+    const name = contribForm.name.trim();
+    const slug = contribForm.slug.trim() || slugifyContributorName(name);
+    if (!name || !slug) {
+      setContribMsg('Escribe el nombre completo del colaborador.');
+      return;
+    }
+    setSavingContrib(true);
+    setContribMsg('');
+    try {
+      const res = await fetch('/api/studio-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_contributor',
+          profile: { ...contribForm, slug, name },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setContribMsg(data.error || 'No se pudo guardar el colaborador.');
+      } else {
+        setContributors((prev) => ({ ...prev, [slug]: data.contributor }));
+        setContribForm({
+          slug: '',
+          name: '',
+          role: 'Fotografía Editorial',
+          bio: '',
+          instagram: '',
+          linkedin: '',
+          website: '',
+        });
+        setContribMsg(`Perfil de ${name} guardado ✓ (/colaborador/${slug})`);
+      }
+    } catch {
+      setContribMsg('Error de conexión al guardar colaborador.');
+    } finally {
+      setSavingContrib(false);
+    }
+  }
+
+  async function handleDeleteContributor(slug: string) {
+    try {
+      const res = await fetch('/api/studio-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_contributor', slug }),
+      });
+      if (res.ok) {
+        setContributors((prev) => {
+          const next = { ...prev };
+          delete next[slug];
+          return next;
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   async function handleSaveSocials(e: React.FormEvent) {
     e.preventDefault();
@@ -566,7 +643,123 @@ export function AdminStudioSettingsPanel() {
         )}
       </div>
 
-      {/* 5. HERRAMIENTA AVANZADA PRE-LANZAMIENTO */}
+      {/* 5. COLABORADORES Y CRÉDITOS ESTILO VOGUE */}
+      <div
+        style={{
+          marginBottom: 24,
+          padding: 18,
+          background: '#fbf9f6',
+          border: '1px solid #dfd7ce',
+        }}
+      >
+        <div style={{ marginBottom: 14 }}>
+          <span style={{ fontSize: 9, letterSpacing: '.18em', color: '#711c32', fontWeight: 600 }}>
+            COLABORADORES & CRÉDITOS EDITORIALES (ESTILO VOGUE)
+          </span>
+          <h3 style={{ margin: '4px 0 0', fontSize: 20, fontFamily: 'var(--font-editorial)', fontWeight: 400 }}>
+            Perfiles de fotógrafos, redactores y corresponsales
+          </h3>
+        </div>
+
+        <form onSubmit={handleSaveContributor} className="admin-form-grid" style={{ gap: 12 }}>
+          <label>
+            NOMBRE DEL COLABORADOR
+            <input
+              value={contribForm.name}
+              onChange={(e) => setContribForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="Ej. Valeria Mendoza"
+            />
+          </label>
+          <label>
+            ROL / ESPECIALIDAD
+            <input
+              value={contribForm.role}
+              onChange={(e) => setContribForm((p) => ({ ...p, role: e.target.value }))}
+              placeholder="Fotografía Editorial · Moda & Sociedad"
+            />
+          </label>
+          <label className="admin-field-span-2">
+            EXPERIENCIA Y RESEÑA EDITORIAL
+            <textarea
+              rows={3}
+              value={contribForm.bio}
+              onChange={(e) => setContribForm((p) => ({ ...p, bio: e.target.value }))}
+              placeholder="Trayectoria, enfoque visual o experiencia editorial que aparecerá en su ficha pública…"
+            />
+          </label>
+          <label>
+            INSTAGRAM (OPCIONAL)
+            <input
+              type="url"
+              value={contribForm.instagram || ''}
+              onChange={(e) => setContribForm((p) => ({ ...p, instagram: e.target.value }))}
+              placeholder="https://instagram.com/..."
+            />
+          </label>
+          <label>
+            LINKEDIN O PORTAFOLIO (OPCIONAL)
+            <input
+              type="url"
+              value={contribForm.linkedin || ''}
+              onChange={(e) => setContribForm((p) => ({ ...p, linkedin: e.target.value }))}
+              placeholder="https://www.linkedin.com/in/..."
+            />
+          </label>
+          <div className="admin-field-span-2" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <button type="submit" disabled={savingContrib} className="admin-primary-btn">
+              {savingContrib ? 'GUARDANDO…' : 'GUARDAR COLABORADOR'}
+            </button>
+            {contribMsg && <span style={{ fontSize: 12, color: '#711c32' }}>{contribMsg}</span>}
+          </div>
+        </form>
+
+        {Object.values(contributors).length > 0 && (
+          <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
+            {Object.values(contributors).map((c) => (
+              <div
+                key={c.slug}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 12px',
+                  background: '#fff',
+                  border: '1px solid #e6dfd7',
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: 13 }}>{c.name}</strong>{' '}
+                  <span style={{ fontSize: 11, color: '#711c32' }}>· {c.role}</span>
+                  <div style={{ fontSize: 11, color: '#6e655f', marginTop: 2 }}>
+                    <a href={`/colaborador/${c.slug}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'underline' }}>
+                      /colaborador/{c.slug}
+                    </a>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setContribForm({ ...c })}
+                    style={{ fontSize: 10, padding: '5px 9px', border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}
+                  >
+                    EDITAR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteContributor(c.slug)}
+                    style={{ fontSize: 10, padding: '5px 9px', border: '1px solid #e0c8ce', color: '#711c32', background: '#fff', cursor: 'pointer' }}
+                  >
+                    QUITAR
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 6. HERRAMIENTA AVANZADA PRE-LANZAMIENTO */}
       <div
         style={{
           padding: '14px 18px',

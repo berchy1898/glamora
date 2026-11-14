@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import type { SocialPlatform } from '@/components/SocialIcons';
+import type { ArticleEditorialMeta, ContributorProfile } from '@/lib/contributors';
 import {
   DEFAULT_ISSUE_DESIGN,
   type CoverMastheadPalette,
@@ -44,12 +45,16 @@ export type ContactMessageItem = {
   createdAt: string;
 };
 
+export type { ArticleEditorialMeta, ContributorProfile };
+
 export type StudioConfigData = {
   socials: StudioSocialLinks;
   subscribers: NewsletterSubscriber[];
   issueDesigns: Record<string, IssueDesignConfig>;
   contactMessages: ContactMessageItem[];
   articleViews: Record<string, number>;
+  contributors: Record<string, ContributorProfile>;
+  articleMeta: Record<string, ArticleEditorialMeta>;
 };
 
 export const DEFAULT_SOCIAL_LINKS: StudioSocialLinks = {
@@ -114,6 +119,8 @@ export async function readStudioConfig(): Promise<StudioConfigData> {
   let cloudViews: Record<string, number> | null = null;
   let cloudSubs: NewsletterSubscriber[] | null = null;
   let cloudContacts: ContactMessageItem[] | null = null;
+  let cloudContributors: Record<string, ContributorProfile> | null = null;
+  let cloudArticleMeta: Record<string, ArticleEditorialMeta> | null = null;
 
   try {
     const settings = await getSupabaseRest('studio_settings?select=key,value');
@@ -122,6 +129,8 @@ export async function readStudioConfig(): Promise<StudioConfigData> {
         if (row.key === 'social_links' && row.value) cloudSocials = row.value;
         if (row.key === 'issue_designs' && row.value) cloudIssueDesigns = row.value;
         if (row.key === 'article_views' && row.value) cloudViews = row.value;
+        if (row.key === 'contributors' && row.value) cloudContributors = row.value;
+        if (row.key === 'article_meta' && row.value) cloudArticleMeta = row.value;
       }
     }
 
@@ -165,6 +174,8 @@ export async function readStudioConfig(): Promise<StudioConfigData> {
     issueDesigns: cloudIssueDesigns !== null ? cloudIssueDesigns : (fileData.issueDesigns || {}),
     contactMessages: cloudContacts !== null ? cloudContacts : (Array.isArray(fileData.contactMessages) ? fileData.contactMessages : []),
     articleViews: cloudViews !== null ? cloudViews : (fileData.articleViews || {}),
+    contributors: cloudContributors !== null ? cloudContributors : (fileData.contributors || {}),
+    articleMeta: cloudArticleMeta !== null ? cloudArticleMeta : (fileData.articleMeta || {}),
   };
 }
 
@@ -175,6 +186,8 @@ export async function writeStudioConfig(data: StudioConfigData): Promise<void> {
       { key: 'social_links', value: data.socials, updated_at: new Date().toISOString() },
       { key: 'issue_designs', value: data.issueDesigns, updated_at: new Date().toISOString() },
       { key: 'article_views', value: data.articleViews, updated_at: new Date().toISOString() },
+      { key: 'contributors', value: data.contributors || {}, updated_at: new Date().toISOString() },
+      { key: 'article_meta', value: data.articleMeta || {}, updated_at: new Date().toISOString() },
     ], true);
   } catch {
     // ignore

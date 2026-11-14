@@ -4,9 +4,12 @@ import {
   DEFAULT_SOCIAL_LINKS,
   readStudioConfig,
   writeStudioConfig,
+  type ArticleEditorialMeta,
+  type ContributorProfile,
   type IssueDesignConfig,
   type StudioSocialLinks,
 } from '@/lib/studio-config';
+import { slugifyContributorName } from '@/lib/contributors';
 
 async function insertSupabaseRest(endpoint: string, body: any): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -155,6 +158,59 @@ export async function POST(request: Request) {
       current.contactMessages = [];
       await writeStudioConfig(current);
       return NextResponse.json({ ok: true, clearedCount: count, message: 'Bandeja de mensajes de prueba vaciada.' });
+    }
+
+    if (body.action === 'save_article_meta' && typeof body.slug === 'string') {
+      const slugKey = body.slug.trim();
+      if (!slugKey) {
+        return NextResponse.json({ error: 'Slug de artículo requerido' }, { status: 400 });
+      }
+      const incoming = (body.meta || {}) as Partial<ArticleEditorialMeta>;
+      const cleaned: ArticleEditorialMeta = {
+        photographer: incoming.photographer?.trim() || undefined,
+        coverageBy: incoming.coverageBy?.trim() || undefined,
+        expertHeading: incoming.expertHeading?.trim() || undefined,
+        expertBio: incoming.expertBio?.trim() || undefined,
+      };
+      if (
+        !cleaned.photographer &&
+        !cleaned.coverageBy &&
+        !cleaned.expertHeading &&
+        !cleaned.expertBio
+      ) {
+        delete current.articleMeta[slugKey];
+      } else {
+        current.articleMeta[slugKey] = cleaned;
+      }
+      await writeStudioConfig(current);
+      return NextResponse.json({ ok: true, articleMeta: current.articleMeta[slugKey] || null });
+    }
+
+    if (body.action === 'save_contributor' && body.profile && typeof body.profile === 'object') {
+      const incoming = body.profile as Partial<ContributorProfile>;
+      const name = (incoming.name || '').trim();
+      const slug = (incoming.slug || '').trim() || slugifyContributorName(name);
+      if (!name || !slug) {
+        return NextResponse.json({ error: 'Nombre de colaborador requerido' }, { status: 400 });
+      }
+      current.contributors[slug] = {
+        slug,
+        name,
+        role: (incoming.role || 'Colaborador Editorial').trim(),
+        bio: (incoming.bio || '').trim(),
+        instagram: incoming.instagram?.trim() || undefined,
+        linkedin: incoming.linkedin?.trim() || undefined,
+        website: incoming.website?.trim() || undefined,
+      };
+      await writeStudioConfig(current);
+      return NextResponse.json({ ok: true, contributor: current.contributors[slug] });
+    }
+
+    if (body.action === 'delete_contributor' && typeof body.slug === 'string') {
+      const slugKey = body.slug.trim();
+      delete current.contributors[slugKey];
+      await writeStudioConfig(current);
+      return NextResponse.json({ ok: true });
     }
 
     return NextResponse.json({ error: 'Acción no reconocida' }, { status: 400 });

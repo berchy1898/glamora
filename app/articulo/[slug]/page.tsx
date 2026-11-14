@@ -3,6 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getArticle, getArticles, type Article } from '@/lib/data';
+import { readStudioConfig } from '@/lib/studio-config';
+import { slugifyContributorName } from '@/lib/contributors';
 import { extractEditorialVideo } from '@/lib/editorial-video';
 import { EditorialBodyRenderer } from '@/components/EditorialBodyRenderer';
 import { EditorialVideoPlayer } from '@/components/EditorialVideoPlayer';
@@ -62,9 +64,17 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const a = await getArticle(slug);
+  const [a, studioConfig] = await Promise.all([getArticle(slug), readStudioConfig()]);
 
   if (!a) notFound();
+
+  const articleMeta = studioConfig.articleMeta?.[a.slug];
+  const authorName = (a.author || 'GLAMORA EDITORIAL').trim();
+  const authorSlug = slugifyContributorName(authorName);
+  const photographerName = articleMeta?.photographer?.trim();
+  const photographerSlug = slugifyContributorName(photographerName);
+  const coverageName = articleMeta?.coverageBy?.trim();
+  const coverageSlug = slugifyContributorName(coverageName);
 
   let relatedArticles: Article[] = [];
   try {
@@ -156,7 +166,32 @@ export default async function ArticlePage({
           {a.excerpt && <p className="lead">{a.excerpt}</p>}
 
           <div className="article-byline">
-            <span>POR {a.author || 'GLAMORA EDITORIAL'}</span>
+            <span>
+              POR{' '}
+              {authorSlug ? (
+                <Link href={`/colaborador/${authorSlug}`} className="article-byline-link">
+                  {authorName.toUpperCase()}
+                </Link>
+              ) : (
+                authorName.toUpperCase()
+              )}
+            </span>
+            {photographerName && photographerSlug && (
+              <span>
+                FOTOGRAFÍA POR{' '}
+                <Link href={`/colaborador/${photographerSlug}`} className="article-byline-link">
+                  {photographerName.toUpperCase()}
+                </Link>
+              </span>
+            )}
+            {coverageName && coverageSlug && (
+              <span>
+                COBERTURA POR{' '}
+                <Link href={`/colaborador/${coverageSlug}`} className="article-byline-link">
+                  {coverageName.toUpperCase()}
+                </Link>
+              </span>
+            )}
             {date && <span>{date.toUpperCase()}</span>}
             <span>{readingMinutes} MIN DE LECTURA</span>
             <span>GLAMORA · BOLIVIA</span>
@@ -240,6 +275,22 @@ export default async function ArticlePage({
                 </p>
               </div>
             )}
+          </section>
+        )}
+
+        {articleMeta?.expertBio?.trim() && (
+          <section
+            className="article-expert-section"
+            aria-label={articleMeta.expertHeading || 'Conoce a nuestra experta'}
+          >
+            <h2>{articleMeta.expertHeading || 'Conoce a nuestra experta'}</h2>
+            {articleMeta.expertBio
+              .split(/\n{2,}/)
+              .map((p) => p.trim())
+              .filter(Boolean)
+              .map((paragraph, idx) => (
+                <p key={idx}>{paragraph}</p>
+              ))}
           </section>
         )}
 
