@@ -107,6 +107,9 @@ export default function Admin() {
   const [filterCategory, setFilterCategory] = useState('TODAS');
   const [filterStatus, setFilterStatus] = useState('TODOS');
   const [unpublishDemoBusy, setUnpublishDemoBusy] = useState(false);
+  const [studioTab, setStudioTab] = useState<
+    'publications' | 'calendar' | 'contributors' | 'socials' | 'inbox' | 'system'
+  >('publications');
   const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inlineImageInputRef = useRef<HTMLInputElement | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -234,6 +237,7 @@ export default function Admin() {
       video_caption: video?.caption || '',
     });
 
+    setStudioTab('publications');
     setMessage('Editando: ' + (a.title || 'Artículo'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -1054,6 +1058,68 @@ export default function Admin() {
         {loadError && <button type="button" className="text-link" onClick={load}>INTENTAR DE NUEVO ↻</button>}
         {message && <p className="status" role="status">{message}</p>}
 
+        {/* Barra de pestañas de productividad de GLAMORA Studio */}
+        <nav
+          aria-label="Secciones de GLAMORA Studio"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 22,
+            padding: '10px 12px',
+            background: '#15131a',
+            border: '1px solid rgba(217, 185, 164, .28)',
+          }}
+        >
+          {[
+            { id: 'publications', label: `PUBLICACIONES (${items.length})` },
+            { id: 'calendar', label: 'CALENDARIO' },
+            { id: 'contributors', label: 'COLABORADORES' },
+            { id: 'socials', label: 'REDES SOCIALES' },
+            { id: 'inbox', label: 'MENSAJES & SUSCRIPTORES' },
+            { id: 'system', label: 'SISTEMA & MÉTRICAS' },
+          ].map((tab) => {
+            const active = studioTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStudioTab(tab.id as typeof studioTab)}
+                style={{
+                  padding: '9px 14px',
+                  border: active ? '1px solid #d9b9a4' : '1px solid rgba(255,255,255,.16)',
+                  background: active ? '#711c32' : 'transparent',
+                  color: active ? '#f7f5f0' : '#d9b9a4',
+                  fontSize: 9.5,
+                  fontWeight: 600,
+                  letterSpacing: '.16em',
+                  cursor: 'pointer',
+                  transition: 'all .18s ease',
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+          <a
+            href="/admin/issues"
+            style={{
+              marginLeft: 'auto',
+              padding: '9px 14px',
+              border: '1px solid #d9b9a4',
+              background: 'rgba(217, 185, 164, .12)',
+              color: '#f7f5f0',
+              fontSize: 9.5,
+              fontWeight: 600,
+              letterSpacing: '.16em',
+              textDecoration: 'none',
+            }}
+          >
+            REVISTA PDF / FLIPBOOK ↗
+          </a>
+        </nav>
+
+        {studioTab === 'publications' && (
         <section className="admin-panel admin-summary-panel" style={{ marginBottom: 22 }}>
           <div className="eyebrow">CONTROL EDITORIAL</div>
           <h2 style={{ font: '27px Georgia', fontWeight: 400, marginTop: 8 }}>
@@ -1115,9 +1181,13 @@ export default function Admin() {
             <strong style={{ color: '#211b1d', fontVariantNumeric: 'tabular-nums' }}>{items.length}</strong>
           </div>
         </section>
+        )}
 
-        <AdminStudioSettingsPanel />
+        {(studioTab === 'contributors' || studioTab === 'socials' || studioTab === 'inbox' || studioTab === 'system') && (
+          <AdminStudioSettingsPanel section={studioTab} />
+        )}
 
+        {studioTab === 'calendar' && (
         <section className="admin-panel" style={{ marginBottom: 22 }}>
           <div className="eyebrow">PLANIFICACIÓN EDITORIAL</div>
           <h2 style={{ font: '27px Georgia', fontWeight: 400, marginTop: 8 }}>
@@ -1286,7 +1356,10 @@ export default function Admin() {
             El calendario reúne publicaciones y coberturas. Las coberturas se identifican en verde y conservan su ficha independiente en la Agenda Editorial.
           </small>
         </section>
+        )}
 
+        {studioTab === 'publications' && (
+        <>
         <section className="admin-panel admin-article-editor">
           <h2 style={{ font: '27px Georgia', fontWeight: 400 }}>
             {editingId ? 'Editar publicación' : 'Nueva publicación'}
@@ -2382,6 +2455,19 @@ export default function Admin() {
 
                       <button
                         className="text-link"
+                        onClick={() => {
+                          const url = `${window.location.origin}/articulo/${a.slug}`;
+                          navigator.clipboard?.writeText(url);
+                          setMessage(`Enlace copiado: ${url}`);
+                        }}
+                      >
+                        COPIAR URL
+                      </button>
+
+                      {' '}
+
+                      <button
+                        className="text-link"
                         onClick={() => remove(a.id)}
                       >
                         ELIMINAR
@@ -2393,6 +2479,8 @@ export default function Admin() {
             </table>
           </div>
         </section>
+        </>
+        )}
       </div>
 
       {previewOpen && (

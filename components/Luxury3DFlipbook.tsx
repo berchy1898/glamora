@@ -45,10 +45,14 @@ export function Luxury3DFlipbook({
   const [loupePos, setLoupePos] = useState<{ x: number; y: number; bgX: number; bgY: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState<{ done: number; total: number } | null>(null);
   const [pdfPages, setPdfPages] = useState<string[]>([]);
+  const [zoomScale, setZoomScale] = useState<1 | 1.35 | 1.75>(1);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
 
   // Detect mobile
   useEffect(() => {
@@ -60,33 +64,85 @@ export function Luxury3DFlipbook({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Web Audio API: Synthesize realistic silk paper turn sound
+  // Web Audio API: Multi-layered natural glossy magazine page-turn acoustics
   const playPaperSound = useCallback(() => {
     if (!soundEnabled || typeof window === 'undefined') return;
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const bufferSize = Math.floor(ctx.sampleRate * 0.18);
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime;
+      const duration = 0.34;
+      const bufferSize = Math.floor(ctx.sampleRate * duration);
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
+
+      // Pink-like noise (smoother, warmer paper texture than harsh white noise)
+      let b0 = 0;
+      let b1 = 0;
+      let b2 = 0;
       for (let i = 0; i < bufferSize; i++) {
-        const decay = Math.exp(-i / (ctx.sampleRate * 0.04));
-        data[i] = (Math.random() * 2 - 1) * decay;
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99765 * b0 + white * 0.099046;
+        b1 = 0.963 * b1 + white * 0.2965164;
+        b2 = 0.57 * b2 + white * 1.0526913;
+        data[i] = (b0 + b1 + b2 + white * 0.1848) * 0.18;
       }
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 1100;
-      filter.Q.value = 1.4;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.09, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.17);
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      noise.start();
+
+      // Layer 1: Finger lift & paper slide sweep
+      const slideSrc = ctx.createBufferSource();
+      slideSrc.buffer = buffer;
+      const slideFilter = ctx.createBiquadFilter();
+      slideFilter.type = 'bandpass';
+      slideFilter.frequency.setValueAtTime(620, now);
+      slideFilter.frequency.exponentialRampToValueAtTime(1650, now + 0.16);
+      slideFilter.Q.value = 1.1;
+      const slideGain = ctx.createGain();
+      slideGain.gain.setValueAtTime(0.001, now);
+      slideGain.gain.linearRampToValueAtTime(0.14, now + 0.05);
+      slideGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      slideSrc.connect(slideFilter);
+      slideFilter.connect(slideGain);
+      slideGain.connect(ctx.destination);
+      slideSrc.start(now);
+
+      // Layer 2: Soft air whoosh of the turning spread
+      const airSrc = ctx.createBufferSource();
+      airSrc.buffer = buffer;
+      const airFilter = ctx.createBiquadFilter();
+      airFilter.type = 'lowpass';
+      airFilter.frequency.setValueAtTime(440, now + 0.04);
+      airFilter.frequency.exponentialRampToValueAtTime(170, now + 0.29);
+      const airGain = ctx.createGain();
+      airGain.gain.setValueAtTime(0.001, now + 0.04);
+      airGain.gain.linearRampToValueAtTime(0.16, now + 0.14);
+      airGain.gain.exponentialRampToValueAtTime(0.001, now + 0.31);
+      airSrc.connect(airFilter);
+      airFilter.connect(airGain);
+      airGain.connect(ctx.destination);
+      airSrc.start(now + 0.03);
+
+      // Layer 3: Gentle paper settle against the opposite page
+      const settleSrc = ctx.createBufferSource();
+      settleSrc.buffer = buffer;
+      const settleFilter = ctx.createBiquadFilter();
+      settleFilter.type = 'bandpass';
+      settleFilter.frequency.setValueAtTime(2100, now + 0.22);
+      settleFilter.Q.value = 1.8;
+      const settleGain = ctx.createGain();
+      settleGain.gain.setValueAtTime(0.001, now + 0.22);
+      settleGain.gain.linearRampToValueAtTime(0.06, now + 0.245);
+      settleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.33);
+      settleSrc.connect(settleFilter);
+      settleFilter.connect(settleGain);
+      settleGain.connect(ctx.destination);
+      settleSrc.start(now + 0.22);
     } catch {
       // Audio autoplay blocked or unsupported
     }
@@ -119,9 +175,11 @@ export function Luxury3DFlipbook({
         const loadingTask = pdfjs.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
         const renderedPages: string[] = [];
+        if (isMounted) setPdfProgress({ done: 0, total: pdf.numPages });
 
-        // Render each page into a data URL
+        // Render progressively: Page 1 shows immediately, remaining pages stream in background
         for (let p = 1; p <= pdf.numPages; p++) {
+          if (!isMounted) break;
           const page = await pdf.getPage(p);
           const viewport = page.getViewport({ scale: 2.0 }); // 2x Retina resolution
           const canvas = document.createElement('canvas');
@@ -131,12 +189,22 @@ export function Luxury3DFlipbook({
           if (context) {
             await page.render({ canvasContext: context, viewport }).promise;
             renderedPages.push(canvas.toDataURL('image/webp', 0.92));
+            if (isMounted) {
+              setPdfProgress({ done: p, total: pdf.numPages });
+              if (p === 1 || p % 2 === 0 || p === pdf.numPages) {
+                setPdfPages([...renderedPages]);
+              }
+              if (p === 1) {
+                setLoadingPdf(false);
+              }
+            }
           }
         }
 
         if (isMounted) {
-          setPdfPages(renderedPages);
+          setPdfPages([...renderedPages]);
           setLoadingPdf(false);
+          setPdfProgress(null);
         }
       } catch (err) {
         console.error('[GLAMORA FLIPBOOK] Error al renderizar PDF:', err);
@@ -291,6 +359,18 @@ export function Luxury3DFlipbook({
             {soundEnabled ? '🔊 SONIDO' : '🔇 MUDO'}
           </button>
 
+          {/* Zoom toggle */}
+          <button
+            type="button"
+            className={`flipbook-btn ${zoomScale > 1 ? 'active' : ''}`}
+            onClick={() =>
+              setZoomScale((prev) => (prev === 1 ? 1.35 : prev === 1.35 ? 1.75 : 1))
+            }
+            title="Acercar páginas (Zoom)"
+          >
+            🔎 {zoomScale === 1 ? 'ZOOM' : `${zoomScale}×`}
+          </button>
+
           {/* Loupe toggle */}
           <button
             type="button"
@@ -344,6 +424,17 @@ export function Luxury3DFlipbook({
         className="flipbook-stage"
         onMouseMove={handleStageMouseMove}
         onMouseLeave={() => setLoupePos(null)}
+        onTouchStart={(e) => {
+          touchStartXRef.current = e.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(e) => {
+          if (touchStartXRef.current === null || zoomScale > 1) return;
+          const endX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
+          const delta = endX - touchStartXRef.current;
+          touchStartXRef.current = null;
+          if (delta < -48) goNext();
+          else if (delta > 48) goPrev();
+        }}
       >
         {/* Navigation Arrow Left */}
         <button
@@ -357,10 +448,23 @@ export function Luxury3DFlipbook({
         </button>
 
         {/* The 3D Magazine Open Spread */}
-        <div className={`flipbook-book-body ${spreadIndex === 0 ? 'single-cover' : 'double-spread'} ${isFlipping ? `flipping-${flipDirection}` : ''}`}>
+        <div
+          className={`flipbook-book-body ${spreadIndex === 0 ? 'single-cover' : 'double-spread'} ${isFlipping ? `flipping-${flipDirection}` : ''}`}
+          style={
+            zoomScale > 1
+              ? { transform: `scale(${zoomScale})`, transformOrigin: 'center center', transition: 'transform .28s ease' }
+              : undefined
+          }
+        >
           {/* Left Page (If Spread > 0) */}
           {spreadIndex > 0 && (
-            <div className="flipbook-page-leaf left-page">
+            <div
+              className="flipbook-page-leaf left-page"
+              onClick={() => {
+                if (!loupeActive && zoomScale === 1) goPrev();
+              }}
+              style={{ cursor: !loupeActive && zoomScale === 1 ? 'w-resize' : undefined }}
+            >
               <div className="leaf-content">
                 {currentSpread.leftImage ? (
                   <div className="page-media-wrap">
@@ -386,7 +490,13 @@ export function Luxury3DFlipbook({
           )}
 
           {/* Right Page */}
-          <div className={`flipbook-page-leaf right-page ${spreadIndex === 0 ? 'cover-leaf' : ''}`}>
+          <div
+            className={`flipbook-page-leaf right-page ${spreadIndex === 0 ? 'cover-leaf' : ''}`}
+            onClick={() => {
+              if (!loupeActive && zoomScale === 1) goNext();
+            }}
+            style={{ cursor: !loupeActive && zoomScale === 1 ? 'e-resize' : undefined }}
+          >
             <div className="leaf-content">
               {currentSpread.rightImage ? (
                 <div className="page-media-wrap">
@@ -477,6 +587,62 @@ export function Luxury3DFlipbook({
           </div>
         </aside>
       )}
+
+      {/* Bottom Interactive Scrubber Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+          padding: '8px 20px 12px',
+          background: 'rgba(15, 13, 18, .92)',
+          borderTop: '1px solid rgba(217, 185, 164, .18)',
+          color: '#d9b9a4',
+          fontSize: 10,
+          letterSpacing: '.16em',
+        }}
+      >
+        <span>{String(spreadIndex + 1).padStart(2, '0')} / {String(spreads.length).padStart(2, '0')}</span>
+        <input
+          type="range"
+          min={0}
+          max={Math.max(0, spreads.length - 1)}
+          value={spreadIndex}
+          onChange={(e) => {
+            const target = Number(e.target.value);
+            if (target !== spreadIndex) {
+              setSpreadIndex(target);
+              playPaperSound();
+            }
+          }}
+          aria-label="Navegar entre pliegos"
+          style={{ width: 'min(360px, 48vw)', accentColor: '#d9b9a4', cursor: 'pointer' }}
+        />
+        {pdfProgress && (
+          <span style={{ color: 'rgba(247, 245, 240, .7)', fontSize: 9 }}>
+            PDF {pdfProgress.done}/{pdfProgress.total}
+          </span>
+        )}
+        {pdfUrl && (
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            style={{
+              color: '#f7f5f0',
+              border: '1px solid rgba(217, 185, 164, .36)',
+              padding: '4px 10px',
+              textDecoration: 'none',
+              fontSize: 9,
+              letterSpacing: '.14em',
+            }}
+          >
+            DESCARGAR PDF ⬇
+          </a>
+        )}
+      </div>
 
       {/* Loading PDF spinner indicator */}
       {loadingPdf && (

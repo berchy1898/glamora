@@ -68,7 +68,13 @@ const SOCIAL_FIELDS: {
   },
 ];
 
-export function AdminStudioSettingsPanel() {
+export type StudioSettingsSection = 'all' | 'contributors' | 'socials' | 'inbox' | 'system';
+
+export function AdminStudioSettingsPanel({
+  section = 'all',
+}: {
+  section?: StudioSettingsSection;
+}) {
   const [socials, setSocials] = useState<SocialLinksState>(INITIAL_SOCIALS);
   const [subscribers, setSubscribers] = useState<SubscriberItem[]>([]);
   const [contactMessages, setContactMessages] = useState<ContactMessageItem[]>([]);
@@ -278,6 +284,22 @@ export function AdminStudioSettingsPanel() {
     }
   }
 
+  function downloadSubscribersCsv() {
+    if (!subscribers.length) return;
+    const rows = [
+      'email,subscribed_at',
+      ...subscribers.map((s) => `"${s.email.replace(/"/g, '""')}","${s.subscribedAt}"`),
+    ];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `glamora-suscriptores-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setStatusMsg(`Exportado CSV con ${subscribers.length} suscriptores ✓`);
+  }
+
   async function deleteContactMessage(id: string) {
     try {
       const db = supabaseBrowser();
@@ -394,6 +416,7 @@ export function AdminStudioSettingsPanel() {
       )}
 
       {/* 2. FORMULARIO DE REDES SOCIALES OFICIALES */}
+      {(section === 'all' || section === 'socials') && (
       <div style={{ marginBottom: 26, paddingBottom: 22, borderBottom: '1px solid #e7ded5' }}>
         <div className="eyebrow" style={{ marginBottom: 10 }}>
           1. ENLACES DE REDES SOCIALES (HEADER &amp; FOOTER)
@@ -450,8 +473,11 @@ export function AdminStudioSettingsPanel() {
           </button>
         </form>
       </div>
+      )}
 
       {/* 3. BANDEJA DE ENTRADA · CONSULTAS DE CONTACTO & ALIANZAS */}
+      {(section === 'all' || section === 'inbox') && (
+      <>
       <div style={{ marginBottom: 26, paddingBottom: 22, borderBottom: '1px solid #e7ded5' }}>
         <div
           style={{
@@ -579,14 +605,24 @@ export function AdminStudioSettingsPanel() {
             </p>
           </div>
           {subscribers.length > 0 && (
-            <button
-              type="button"
-              className="button-primary"
-              onClick={copySubscribers}
-              style={{ fontSize: 9, padding: '7px 14px' }}
-            >
-              COPIAR TODOS LOS CORREOS ({subscribers.length}) ↗
-            </button>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="button-primary"
+                onClick={copySubscribers}
+                style={{ fontSize: 9, padding: '7px 14px' }}
+              >
+                COPIAR CORREOS ({subscribers.length}) ↗
+              </button>
+              <button
+                type="button"
+                className="button-primary"
+                onClick={downloadSubscribersCsv}
+                style={{ fontSize: 9, padding: '7px 14px', background: '#711c32' }}
+              >
+                EXPORTAR CSV ⬇
+              </button>
+            </div>
           )}
         </div>
 
@@ -642,8 +678,11 @@ export function AdminStudioSettingsPanel() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* 5. COLABORADORES Y CRÉDITOS ESTILO VOGUE */}
+      {(section === 'all' || section === 'contributors') && (
       <div
         style={{
           marginBottom: 24,
@@ -758,8 +797,10 @@ export function AdminStudioSettingsPanel() {
           </div>
         )}
       </div>
+      )}
 
       {/* 6. HERRAMIENTA AVANZADA PRE-LANZAMIENTO */}
+      {(section === 'all' || section === 'system') && (
       <div
         style={{
           padding: '14px 18px',
@@ -796,6 +837,7 @@ export function AdminStudioSettingsPanel() {
           REINICIAR CONTADOR DE VISITAS (0) ↺
         </button>
       </div>
+      )}
     </section>
   );
 }
