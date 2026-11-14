@@ -5114,6 +5114,18 @@ body {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  aspect-ratio: auto !important;
+}
+
+.social-grid .social-image img,
+.social-grid .social-adaptive-img {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block;
 }
 
 @media (max-width: 900px) {
