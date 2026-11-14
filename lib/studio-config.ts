@@ -58,7 +58,7 @@ export const DEFAULT_SOCIAL_LINKS: StudioSocialLinks = {
   tiktok: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK || 'https://www.tiktok.com/',
   x: process.env.NEXT_PUBLIC_SOCIAL_X || 'https://x.com/',
   whatsapp: process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP || 'https://wa.me/',
-  messenger: process.env.NEXT_PUBLIC_SOCIAL_MESSENGER || 'https://www.messenger.com/',
+  linkedin: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN || 'https://www.linkedin.com/',
 };
 
 const CONFIG_PATH = path.join(process.cwd(), 'data', 'studio-config.json');

@@ -27,7 +27,7 @@ const INITIAL_SOCIALS: SocialLinksState = {
   tiktok: 'https://www.tiktok.com/',
   x: 'https://x.com/',
   whatsapp: 'https://wa.me/',
-  messenger: 'https://www.messenger.com/',
+  linkedin: 'https://www.linkedin.com/',
 };
 
 const SOCIAL_FIELDS: {
@@ -61,9 +61,9 @@ const SOCIAL_FIELDS: {
     placeholder: 'https://wa.me/59170000000',
   },
   {
-    id: 'messenger',
-    label: 'MESSENGER OFICIAL',
-    placeholder: 'https://m.me/glamorabolivia',
+    id: 'linkedin',
+    label: 'LINKEDIN OFICIAL',
+    placeholder: 'https://www.linkedin.com/company/glamora',
   },
 ];
 

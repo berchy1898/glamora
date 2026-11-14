@@ -87,12 +87,7 @@ export function Footer() {
           <Link href="/" aria-label="Glamora, inicio" className="footer-logo-link">
             <GlamoraLogo variant="footer" tone="dark-bg" />
           </Link>
-          <span>REVISTA DIGITAL & EDICIÓN IMPRESA · BOLIVIA</span>
-          <div style={{ marginTop: '14px', fontSize: '11px', color: '#a0948d', lineHeight: '1.9' }}>
-            <div>General: <a href="mailto:contacto@glamoratheissue.com" style={{ color: '#e5dcd5' }}>contacto@glamoratheissue.com</a></div>
-            <div>Marcas: <a href="mailto:publicidad@glamoratheissue.com" style={{ color: '#e5dcd5' }}>publicidad@glamoratheissue.com</a></div>
-            <div>Prensa: <a href="mailto:editorial@glamoratheissue.com" style={{ color: '#e5dcd5' }}>editorial@glamoratheissue.com</a></div>
-          </div>
+          <span>REVISTA DIGITAL · BOLIVIA</span>
 
           <div className="footer-social-icons" aria-label="Redes oficiales de GLAMORA">
             {socialChannels.map((ch) => (
@@ -105,7 +100,7 @@ export function Footer() {
                 aria-label={ch.name}
                 title={ch.name}
               >
-                <SocialIcon platform={ch.id} size={16} />
+                <SocialIcon platform={ch.id} size={18} />
               </a>
             ))}
           </div>

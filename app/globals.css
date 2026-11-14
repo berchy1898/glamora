@@ -3143,21 +3143,21 @@ body {
 .city-topline-socials {
   display: inline-flex;
   align-items: center;
-  gap: 13px;
+  gap: 15px;
   padding-left: 16px;
-  border-left: 1px solid rgba(31, 26, 23, .12);
+  border-left: 1px solid rgba(255, 255, 255, .14);
 }
 
 .city-topline-social-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #6a615b;
+  color: rgba(240, 228, 216, .78);
   transition: color .2s ease, transform .2s ease;
 }
 
 .city-topline-social-icon:hover {
-  color: var(--ink);
+  color: #f6ebe1;
   transform: translateY(-1px);
 }
 
@@ -3450,8 +3450,8 @@ body {
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   margin: 0 !important;
   border: 1px solid rgba(231, 199, 180, .24);
   border-radius: 50%;
@@ -4576,8 +4576,8 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 42px;
+    height: 42px;
     border: 1px solid rgba(231, 199, 180, .26);
     border-radius: 50%;
     color: #f3eae0;

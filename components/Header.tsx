@@ -134,7 +134,7 @@ export function Header() {
               aria-label={ch.name}
               title={ch.name}
             >
-              <SocialIcon platform={ch.id} size={13} />
+              <SocialIcon platform={ch.id} size={15} />
             </a>
           ))}
         </div>
@@ -258,7 +258,7 @@ export function Header() {
                   aria-label={ch.name}
                   title={ch.name}
                 >
-                  <SocialIcon platform={ch.id} size={16} />
+                  <SocialIcon platform={ch.id} size={18} />
                 </a>
               ))}
             </div>

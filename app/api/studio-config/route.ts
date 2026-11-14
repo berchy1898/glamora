@@ -116,7 +116,7 @@ export async function POST(request: Request) {
         tiktok: incoming.tiktok?.trim() || DEFAULT_SOCIAL_LINKS.tiktok,
         x: incoming.x?.trim() || DEFAULT_SOCIAL_LINKS.x,
         whatsapp: incoming.whatsapp?.trim() || DEFAULT_SOCIAL_LINKS.whatsapp,
-        messenger: incoming.messenger?.trim() || DEFAULT_SOCIAL_LINKS.messenger,
+        linkedin: incoming.linkedin?.trim() || DEFAULT_SOCIAL_LINKS.linkedin,
       };
       await writeStudioConfig(current);
       return NextResponse.json({ ok: true, socials: current.socials });

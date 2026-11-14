@@ -8,7 +8,7 @@ export type SocialPlatform =
   | 'tiktok'
   | 'x'
   | 'whatsapp'
-  | 'messenger';
+  | 'linkedin';
 
 export type GlamoraSocialChannel = {
   id: SocialPlatform;
@@ -49,10 +49,10 @@ export const GLAMORA_SOCIAL_CHANNELS: GlamoraSocialChannel[] = [
     href: process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP || 'https://wa.me/',
   },
   {
-    id: 'messenger',
-    shortLabel: 'MSG',
-    name: 'Messenger',
-    href: process.env.NEXT_PUBLIC_SOCIAL_MESSENGER || 'https://www.messenger.com/',
+    id: 'linkedin',
+    shortLabel: 'IN',
+    name: 'LinkedIn',
+    href: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN || 'https://www.linkedin.com/',
   },
 ];
 
@@ -134,11 +134,12 @@ export function SocialIcon({
           <path d="M9.4 8.8c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.6c.1.2.1.4 0 .6l-.5.6c-.1.2-.2.3 0 .6.3.5.9 1.2 1.8 1.7.2.1.4.1.6-.1l.6-.7c.2-.2.4-.2.6-.1l1.5.7c.3.1.4.3.4.5 0 .4-.2 1.1-.7 1.5-.5.4-1.2.5-2 .2-1.8-.6-3.4-1.9-4.4-3.6-.6-1-.7-1.9-.3-2.5z" />
         </svg>
       );
-    case 'messenger':
+    case 'linkedin':
       return (
         <svg {...common}>
-          <path d="M12 3c-5 0-9 3.7-9 8.4 0 2.6 1.3 4.9 3.3 6.4V21l3-1.7c.9.2 1.8.4 2.7.4 5 0 9-3.7 9-8.4S17 3 12 3z" />
-          <path d="M7.5 13.2l3-3.2 2.2 2.2 3.8-3.2" />
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+          <rect x="2" y="9" width="4" height="12" />
+          <circle cx="4" cy="4" r="2" />
         </svg>
       );
   }
