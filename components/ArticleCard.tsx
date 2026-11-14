@@ -27,7 +27,7 @@ export function ArticleCard({
           href={targetHref}
           className="card-image"
           style={{ display: 'block', textDecoration: 'none' }}
-          title={`Hojear ${article.title} en la revista`}
+          title={`Explorar ${article.title} en la revista`}
         >
           {article.cover_image ? (
             <Image
@@ -56,7 +56,7 @@ export function ArticleCard({
             <a
               href={targetHref}
               style={{ color: 'inherit', textDecoration: 'none' }}
-              title={`Hojear ${article.title} en la revista`}
+              title={`Explorar ${article.title} en la revista`}
             >
               {article.title}
             </a>
@@ -79,7 +79,7 @@ export function ArticleCard({
               className="read-link"
               style={{ margin: 0, textDecoration: 'none' }}
             >
-              {actionLabel || 'HOJEAR EN REVISTA →'}
+              {actionLabel || 'LEER EN REVISTA →'}
             </a>
             {secondaryLink && (
               <Link

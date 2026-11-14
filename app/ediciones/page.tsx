@@ -2,7 +2,7 @@ import { getPublishedIssues } from '@/lib/issues-data';
 import { EditionsArchiveView } from '@/components/EditionsArchiveView';
 
 export const metadata = {
-  title: 'GLAMORA The Issues · Archivo Digital & Colección',
+  title: 'THE ISSUES · Archivo Digital & Colección',
   description:
     'El archivo digital de GLAMORA: colecciones de portadas, grandes crónicas y reportajes visuales en alta definición.',
 };
@@ -15,7 +15,7 @@ export default async function IssuesPage() {
       <header className="people-intro">
         <div className="eyebrow">BIBLIOTHÈQUE GLAMORA · ARCHIVO &amp; COLECCIÓN DIGITAL</div>
         <div className="people-intro-main people-intro-main-long">
-          <h1>GLAMORA THE ISSUES</h1>
+          <h1>THE ISSUES</h1>
           <p>
             El archivo vivo de GLAMORA. Cada edición reúne una cuidada curaduría
             de moda, crónica social, entrevistas en profundidad y gastronomía de autor,

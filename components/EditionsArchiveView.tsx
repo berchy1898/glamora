@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type MagazineIssue } from '@/lib/issues-data';
+import { IssueAcquireModal } from '@/components/IssueAcquireModal';
 
 interface EditionsArchiveViewProps {
   issues: MagazineIssue[];
@@ -13,6 +14,7 @@ export function EditionsArchiveView({ issues }: EditionsArchiveViewProps) {
   const [activeFilter, setActiveFilter] = useState<'all' | '2026' | 'special'>('all');
   const [viewMode, setViewMode] = useState<'catalog' | 'bookshelf'>('catalog');
   const [hoveredSpine, setHoveredSpine] = useState<MagazineIssue | null>(null);
+  const [acquireIssue, setAcquireIssue] = useState<MagazineIssue | null>(null);
 
   const filteredIssues = issues.filter((issue) => {
     if (activeFilter === '2026') {
@@ -217,11 +219,27 @@ export function EditionsArchiveView({ issues }: EditionsArchiveViewProps) {
                   </div>
                 </div>
 
-                <div className="monograph-actions">
+                <div className="monograph-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
                   <Link href={`/ediciones/${featured.slug}`} className="monograph-primary-btn">
-                    <span>HOJEAR EDICIÓN COMPLETA</span>
+                    <span>LEER EDICIÓN COMPLETA</span>
                     <span className="monograph-arrow">↗</span>
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => setAcquireIssue(featured)}
+                    style={{
+                      padding: '13px 20px',
+                      border: '1px solid rgba(217, 185, 164, .55)',
+                      background: 'transparent',
+                      color: '#f7f5f0',
+                      fontSize: 9.5,
+                      fontWeight: 600,
+                      letterSpacing: '.18em',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ADQUIRIR EDICIÓN
+                  </button>
                 </div>
               </div>
             </section>
@@ -282,6 +300,13 @@ export function EditionsArchiveView({ issues }: EditionsArchiveViewProps) {
             </div>
           )}
         </div>
+      )}
+      {acquireIssue && (
+        <IssueAcquireModal
+          issueTitle={acquireIssue.title}
+          issueNumber={acquireIssue.issue_number}
+          onClose={() => setAcquireIssue(null)}
+        />
       )}
     </div>
   );

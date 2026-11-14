@@ -48,6 +48,7 @@ export function Luxury3DFlipbook({
   const [pdfProgress, setPdfProgress] = useState<{ done: number; total: number } | null>(null);
   const [pdfPages, setPdfPages] = useState<string[]>([]);
   const [zoomScale, setZoomScale] = useState<1 | 1.35 | 1.75>(1);
+  const [privacyBlur, setPrivacyBlur] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -277,9 +278,23 @@ export function Luxury3DFlipbook({
     }, 450);
   }, [spreadIndex, isFlipping, playPaperSound]);
 
-  // Keyboard navigation (ArrowLeft / ArrowRight / Escape)
+  // Keyboard navigation + anti-copy / anti-print / screenshot-deterrent protection
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const keyLower = e.key.toLowerCase();
+      if ((e.ctrlKey || e.metaKey) && ['s', 'p', 'u', 'c'].includes(keyLower)) {
+        e.preventDefault();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c', 's'].includes(keyLower)) {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === 'PrintScreen') {
+        e.preventDefault();
+        setPrivacyBlur(true);
+        return;
+      }
       if (e.key === 'ArrowRight' || e.key === 'PageDown') goNext();
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') goPrev();
       if (e.key === 'Escape') {
@@ -291,8 +306,25 @@ export function Luxury3DFlipbook({
         }
       }
     }
+    function handleBlur() {
+      setPrivacyBlur(true);
+    }
+    function handleFocus() {
+      setPrivacyBlur(false);
+    }
+    function handleVisibility() {
+      if (document.hidden) setPrivacyBlur(true);
+    }
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [goNext, goPrev, isFullscreen, onClose]);
 
   // Toggle fullscreen
@@ -325,6 +357,9 @@ export function Luxury3DFlipbook({
       className={`flipbook-theater ${isFullscreen ? 'fullscreen' : ''}`}
       role="dialog"
       aria-label={`Lector Flipbook 3D - GLAMORA The Issue Nº ${issueNumber}`}
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
     >
       {/* Top Floating Control Bar (Vogue Style Champagne & Obsidian) */}
       <header className="flipbook-topbar">
@@ -450,11 +485,12 @@ export function Luxury3DFlipbook({
         {/* The 3D Magazine Open Spread */}
         <div
           className={`flipbook-book-body ${spreadIndex === 0 ? 'single-cover' : 'double-spread'} ${isFlipping ? `flipping-${flipDirection}` : ''}`}
-          style={
-            zoomScale > 1
+          style={{
+            ...(zoomScale > 1
               ? { transform: `scale(${zoomScale})`, transformOrigin: 'center center', transition: 'transform .28s ease' }
-              : undefined
-          }
+              : {}),
+            ...(privacyBlur ? { filter: 'blur(22px) brightness(.45)', transition: 'filter .15s ease' } : {}),
+          }}
         >
           {/* Left Page (If Spread > 0) */}
           {spreadIndex > 0 && (
@@ -522,7 +558,55 @@ export function Luxury3DFlipbook({
 
           {/* Realistic 3D Central Gutter Spine */}
           {spreadIndex > 0 && <div className="flipbook-center-spine" aria-hidden="true" />}
+
+          {/* Subtle Editorial Watermark Overlay */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              pointerEvents: 'none',
+              display: 'grid',
+              placeItems: 'center',
+              overflow: 'hidden',
+              zIndex: 6,
+            }}
+          >
+            <span
+              style={{
+                transform: 'rotate(-24deg)',
+                fontSize: 'clamp(12px, 1.5vw, 18px)',
+                letterSpacing: '.34em',
+                color: 'rgba(217, 185, 164, .16)',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                fontWeight: 600,
+              }}
+            >
+              GLAMORA · THE ISSUE Nº {String(issueNumber).padStart(2, '0')} · LECTURA PROTEGIDA
+            </span>
+          </div>
         </div>
+
+        {privacyBlur && (
+          <div
+            onClick={() => setPrivacyBlur(false)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 30,
+              display: 'grid',
+              placeItems: 'center',
+              background: 'rgba(15, 13, 18, .45)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ padding: '18px 26px', border: '1px solid #d9b9a4', background: '#15131a', color: '#f7f5f0', textAlign: 'center' }}>
+              <div style={{ fontSize: 9, letterSpacing: '.22em', color: '#d9b9a4', marginBottom: 6 }}>LECTURA PROTEGIDA</div>
+              <div style={{ fontFamily: 'var(--font-editorial)', fontSize: 20 }}>Haz clic aquí para continuar leyendo</div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation Arrow Right */}
         <button
@@ -624,24 +708,9 @@ export function Luxury3DFlipbook({
             PDF {pdfProgress.done}/{pdfProgress.total}
           </span>
         )}
-        {pdfUrl && (
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            style={{
-              color: '#f7f5f0',
-              border: '1px solid rgba(217, 185, 164, .36)',
-              padding: '4px 10px',
-              textDecoration: 'none',
-              fontSize: 9,
-              letterSpacing: '.14em',
-            }}
-          >
-            DESCARGAR PDF ⬇
-          </a>
-        )}
+        <span style={{ color: 'rgba(217, 185, 164, .75)', fontSize: 9, letterSpacing: '.14em' }}>
+          🔒 EDICIÓN PROTEGIDA
+        </span>
       </div>
 
       {/* Loading PDF spinner indicator */}

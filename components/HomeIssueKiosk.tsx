@@ -25,7 +25,7 @@ export function HomeIssueKiosk({ issue }: HomeIssueKioskProps) {
         {/* Header - Inspired directly by Vogue & Vanity Fair */}
         <header className="mag-vogue-header">
           <span className="mag-vogue-overline">
-            VISTA PREVIA INTERACTIVA (HAZ CLIC EN LA PORTADA PARA HOJEAR)
+            VISTA PREVIA INTERACTIVA (HAZ CLIC EN LA PORTADA PARA EXPLORAR)
           </span>
           <h2 className="mag-vogue-title">
             <span className="mag-vogue-title-brand">GLAMORA</span>{' '}
@@ -39,7 +39,7 @@ export function HomeIssueKiosk({ issue }: HomeIssueKioskProps) {
             <Link
               href={`/ediciones/${issue.slug}`}
               className="mag-vogue-cover-link"
-              title={`Hojear GLAMORA The Issue Nº ${issueNum}`}
+              title={`Explorar GLAMORA The Issue Nº ${issueNum}`}
             >
               <div className="mag-vogue-cover-frame">
                 {issue.cover_image ? (
@@ -103,7 +103,7 @@ export function HomeIssueKiosk({ issue }: HomeIssueKioskProps) {
                 href={`/ediciones/${issue.slug}`}
                 className="mag-vogue-cta-primary"
               >
-                <span>HOJEAR EDICIÓN DIGITAL Nº {issueNum}</span>
+                <span>LEER EDICIÓN DIGITAL Nº {issueNum}</span>
                 <span className="arrow">↗</span>
               </Link>
               <Link href="/ediciones" className="mag-vogue-cta-secondary">

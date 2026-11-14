@@ -1486,7 +1486,7 @@ export function InteractiveIssueReader({
         className="issue-cover issue-cover-interactive"
         role="button"
         tabIndex={0}
-        aria-label={`Tocar portada para hojear la edición ${issueTitle}`}
+        aria-label={`Tocar portada para explorar la edición ${issueTitle}`}
         onClick={() => {
           setActivePageIndex(0);
           setIsOpen(true);

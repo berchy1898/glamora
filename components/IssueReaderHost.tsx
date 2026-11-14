@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Luxury3DFlipbook } from './Luxury3DFlipbook';
 import { InteractiveIssueReader } from './InteractiveIssueReader';
+import { IssueAcquireModal } from './IssueAcquireModal';
 import type { IssueDesignConfig } from '@/lib/issue-design-types';
 import type { IssueArticleItem } from '@/lib/issue-pagination';
 
@@ -35,6 +36,7 @@ export function IssueReaderHost({
     pdfUrl || design.readerEngine === '3d-flipbook' ? 'flipbook' : defaultMode
   );
   const [isFlipbookOpen, setIsFlipbookOpen] = useState(false);
+  const [isAcquireOpen, setIsAcquireOpen] = useState(false);
 
   const num = String(issueNumber).padStart(2, '0');
   const storyCovers = articles.map((a) => a.cover_image).filter(Boolean) as string[];
@@ -129,7 +131,7 @@ export function IssueReaderHost({
             </div>
           </div>
 
-          <div className="host-actions">
+          <div className="host-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             <button
               type="button"
               className="host-open-flipbook-btn"
@@ -137,6 +139,22 @@ export function IssueReaderHost({
             >
               <span>ABRIR LECTOR FLIPBOOK 3D</span>
               <span className="arrow">↗</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAcquireOpen(true)}
+              style={{
+                padding: '13px 20px',
+                border: '1px solid rgba(217, 185, 164, .55)',
+                background: 'transparent',
+                color: '#f7f5f0',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '.18em',
+                cursor: 'pointer',
+              }}
+            >
+              ADQUIRIR EDICIÓN
             </button>
           </div>
         </div>
@@ -168,6 +186,13 @@ export function IssueReaderHost({
             design={design}
           />
         </div>
+      )}
+      {isAcquireOpen && (
+        <IssueAcquireModal
+          issueTitle={issueTitle}
+          issueNumber={issueNumber}
+          onClose={() => setIsAcquireOpen(false)}
+        />
       )}
     </div>
   );
