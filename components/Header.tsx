@@ -158,9 +158,9 @@ export function Header() {
         <Link href="/" aria-label="Glamora, inicio" className="glamora-brand">
           <Image
             src="/brand/glamora-mark.png"
-            alt="GLAMORA — Estilo, elegancia, inspiración"
-            width={1230}
-            height={705}
+            alt="GLAMORA — Estilo · Cultura · Sociedad"
+            width={842}
+            height={449}
             className="glamora-logo"
             priority
           />

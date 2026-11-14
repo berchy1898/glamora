@@ -88,9 +88,9 @@ export function Footer() {
           <Link href="/" aria-label="Glamora, inicio" className="footer-logo-link">
             <Image
               src="/brand/glamora-mark.png"
-              alt="GLAMORA"
-              width={1230}
-              height={705}
+              alt="GLAMORA — Estilo · Cultura · Sociedad"
+              width={842}
+              height={449}
               className="footer-logo"
             />
           </Link>
