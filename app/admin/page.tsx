@@ -961,8 +961,8 @@ export default function Admin() {
     <main className="admin-shell admin-dashboard">
       <EditorialImageCropperModal
         file={pendingCropCoverFile}
-        defaultPreset="horizontal"
-        title="Encuadre Editorial de Portada de Artículo (Recomendado: Horizontal 16:9)"
+        defaultPreset="vertical"
+        title="Encuadre Editorial de Portada de Artículo (Vertical 3:4 o Panorámico 16:9)"
         onConfirm={(standardized) => {
           setCoverFile(standardized);
           setCoverPreview(URL.createObjectURL(standardized));
@@ -1486,30 +1486,32 @@ export default function Admin() {
               <div className="wide" style={{ marginTop: 8, marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span style={{ fontSize: 9, letterSpacing: '.14em', color: '#711c32', fontWeight: 600 }}>
-                    ★ PORTADA PRINCIPAL ACTIVA (ENCUADRE PANORÁMICO REAL)
+                    ★ PORTADA PRINCIPAL ACTIVA (ENCUADRE EDITORIAL WYSIWYG)
                   </span>
                   <span style={{ fontSize: 10, color: '#777' }}>
-                    Esta imagen abrirá el artículo y encabezará la sección Sociales sin recortes
+                    Visualización fiel sin recortes: respeta encuadre vertical 3:4 o panorámico 16:9
                   </span>
                 </div>
                 <div style={{
                   position: 'relative',
-                  width: '100%',
-                  maxWidth: '540px',
-                  aspectRatio: '16 / 10',
+                  width: 'fit-content',
+                  maxWidth: '100%',
                   background: '#19161c',
                   border: '1px solid #d9c2b3',
                   overflow: 'hidden',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                  borderRadius: 2,
                 }}>
                   <img
                     src={coverPreview}
                     alt="Vista previa de portada principal"
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
                       display: 'block',
+                      maxWidth: '460px',
+                      maxHeight: '520px',
+                      width: 'auto',
+                      height: 'auto',
+                      objectFit: 'contain',
                     }}
                   />
                   <span style={{

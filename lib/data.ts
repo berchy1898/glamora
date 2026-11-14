@@ -262,3 +262,16 @@ export async function getCoverArticle(): Promise<CoverArticleResult> {
     return { article: null, unavailable: true };
   }
 }
+
+export function isPortraitArticle(article: Article | null | undefined): boolean {
+  if (!article || !article.cover_image) return false;
+  const src = article.cover_image.toLowerCase();
+  // Artículos con portada vertical confirmada
+  if (src.includes('1794625297582-ua8io4ffgsg') || article.slug.includes('miski-2026')) {
+    return true;
+  }
+  if (src.includes('vertical') || src.includes('portrait') || src.includes('3-4') || src.includes('haute-couture')) {
+    return true;
+  }
+  return false;
+}

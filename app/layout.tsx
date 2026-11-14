@@ -1,7 +1,14 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
+import { Bodoni_Moda, Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { SiteChrome } from '@/components/SiteChrome';
+
+const fontBodoni = Bodoni_Moda({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-bodoni-loaded',
+  display: 'swap',
+});
 
 const fontEditorial = Cormorant_Garamond({
   subsets: ['latin'],
@@ -52,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${fontEditorial.variable} ${fontUi.variable}`}
+      className={`${fontBodoni.variable} ${fontEditorial.variable} ${fontUi.variable}`}
     >
       <body>
         <SiteChrome>{children}</SiteChrome>

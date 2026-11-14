@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export function HeroCoverImage({
@@ -8,22 +8,30 @@ export function HeroCoverImage({
   src,
   alt,
   city,
+  initialAspect = 'landscape',
 }: {
   slug: string;
   src: string;
   alt: string;
   city?: string | null;
+  initialAspect?: 'landscape' | 'portrait' | 'square';
 }) {
-  const [aspect, setAspect] = useState<'landscape' | 'portrait' | 'square'>('landscape');
+  const [aspect, setAspect] = useState<'landscape' | 'portrait' | 'square'>(initialAspect);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (initialAspect) {
+      setAspect(initialAspect);
+    }
+  }, [initialAspect]);
 
   function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
     const img = e.currentTarget;
     if (img.naturalWidth && img.naturalHeight) {
       const ratio = img.naturalWidth / img.naturalHeight;
-      if (ratio >= 1.25) {
+      if (ratio >= 1.18) {
         setAspect('landscape');
-      } else if (ratio <= 0.88) {
+      } else if (ratio <= 0.92) {
         setAspect('portrait');
       } else {
         setAspect('square');

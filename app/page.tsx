@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { getArticles, getCoverArticle, type Article } from '@/lib/data';
+import { getArticles, getCoverArticle, isPortraitArticle, type Article } from '@/lib/data';
 import { excludeCoverFromRecent } from '@/lib/cover-selection';
 import { ArticleCard } from '@/components/ArticleCard';
 import { HeroCoverImage } from '@/components/HeroCoverImage';
@@ -138,6 +138,8 @@ export default async function Home() {
     .slice(0, 3);
   const socialTiles = buildSocialTiles(socialArticles, articles);
 
+  const isHeroPortrait = isPortraitArticle(hero);
+
   return (
     <main>
       <section className="container hero" aria-labelledby="cover-title">
@@ -147,13 +149,14 @@ export default async function Home() {
           <span>BOLIVIA, IN FOCUS</span>
         </div>
 
-        <div className="hero-grid">
+        <div className={`hero-grid ${isHeroPortrait ? 'hero-portrait hero-vertical' : ''}`}>
           {hero?.cover_image ? (
             <HeroCoverImage
               slug={hero.slug}
               src={hero.cover_image}
               alt={hero.title}
               city={hero.city}
+              initialAspect={isHeroPortrait ? 'portrait' : 'landscape'}
             />
           ) : (
             <div className="hero-image hero-empty" role="status">
