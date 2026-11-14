@@ -44,6 +44,10 @@ export function HeroCoverImage({
     <Link
       href={`/articulo/${slug}`}
       className={`hero-image hero-image-${aspect} ${isLoaded ? 'is-ready' : ''}`}
+      style={{
+        width: '100%',
+        display: 'block',
+      }}
     >
       <img
         src={src}
@@ -51,6 +55,12 @@ export function HeroCoverImage({
         loading="eager"
         onLoad={handleImageLoad}
         className="hero-adaptive-img"
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          display: 'block',
+        }}
       />
       <span className="image-credit">
         {city || 'GLAMORA EDITORIAL'}

@@ -1125,23 +1125,26 @@ body {
 .hero-grid.hero-portrait,
 .hero-grid.hero-vertical,
 .hero-grid:has(.hero-image-portrait) {
-  grid-template-columns: minmax(0, 0.95fr) minmax(320px, 1.15fr);
+  grid-template-columns: minmax(300px, 0.95fr) minmax(320px, 1.15fr);
 }
 
 .hero-image {
   position: relative;
   display: block;
+  width: 100% !important;
   aspect-ratio: 16 / 9;
   overflow: hidden;
   background: #e9e3dc;
 }
 
 .hero-image.hero-image-landscape {
+  width: 100% !important;
   aspect-ratio: 16 / 9;
 }
 
 .hero-image.hero-image-portrait,
 .hero-image.hero-vertical {
+  width: 100% !important;
   aspect-ratio: 3 / 4 !important;
   max-width: 440px;
   margin: 0 auto;
@@ -1546,8 +1549,9 @@ body {
   .nav-inner a { font-size: 8px; }
   .hero { padding: 32px 0 58px; }
   .hero-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .hero-image { width: 100% !important; }
   .hero-image.hero-image-portrait,
-  .hero-image.hero-vertical { aspect-ratio: 3 / 4 !important; max-width: 100% !important; margin: 0 auto; }
+  .hero-image.hero-vertical { aspect-ratio: 3 / 4 !important; width: 100% !important; max-width: 380px !important; margin: 0 auto; }
   .hero-copy { max-width: 620px; padding: 0 2px; }
   .hero-copy h1 { max-width: 13ch; font-size: clamp(45px, 10vw, 68px); }
   .hero-note { margin-top: 26px; }

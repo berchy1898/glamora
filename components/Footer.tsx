@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { GlamoraLogo } from '@/components/GlamoraLogo';
@@ -85,9 +86,20 @@ export function Footer() {
       <div className="footer-main">
         <div className="footer-brand-block">
           <Link href="/" aria-label="Glamora, inicio" className="footer-logo-link">
-            <GlamoraLogo variant="footer" tone="dark-bg" />
+            <Image
+              src="/brand/glamora-mark.png"
+              alt="GLAMORA"
+              width={1230}
+              height={705}
+              className="footer-logo"
+            />
           </Link>
-          <span>REVISTA DIGITAL · BOLIVIA</span>
+          <span>REVISTA DIGITAL & EDICIÓN IMPRESA · BOLIVIA</span>
+          <div style={{ marginTop: '14px', fontSize: '11px', color: '#a0948d', lineHeight: '1.9' }}>
+            <div>General: <a href="mailto:contacto@glamoratheissue.com" style={{ color: '#e5dcd5' }}>contacto@glamoratheissue.com</a></div>
+            <div>Marcas: <a href="mailto:publicidad@glamoratheissue.com" style={{ color: '#e5dcd5' }}>publicidad@glamoratheissue.com</a></div>
+            <div>Prensa: <a href="mailto:editorial@glamoratheissue.com" style={{ color: '#e5dcd5' }}>editorial@glamoratheissue.com</a></div>
+          </div>
 
           <div className="footer-social-icons" aria-label="Redes oficiales de GLAMORA">
             {socialChannels.map((ch) => (
