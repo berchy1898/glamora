@@ -979,11 +979,21 @@ img{max-width:100%}
   background: transparent !important;
   transform: none !important;
 }
-/* GLAMORA — Sistema editorial público */
+/* GLAMORA — Sistema editorial público (4 colores oficiales: Negro, Oro Rosa, Blanco Marfil, Borgoña) */
 :root {
-  --font-editorial: var(--font-bodoni-loaded), var(--font-serif-loaded), 'Bodoni Moda', 'Playfair Display', Didot, 'Bodoni MT', Georgia, serif;
-  --font-serif: var(--font-bodoni-loaded), var(--font-serif-loaded), 'Bodoni Moda', 'Playfair Display', Didot, 'Bodoni MT', Georgia, serif;
-  --font-ui: var(--font-sans-loaded), Arial, Helvetica, sans-serif;
+  --ink: #15131a;
+  --ink-soft: #231f29;
+  --ivory: #f7f5f0;
+  --paper: #fffefa;
+  --wine: #711c32;
+  --wine-bright: #8f243e;
+  --champagne: #d9b9a4;
+  --champagne-soft: #e7c7b4;
+  --muted: rgba(21, 19, 26, .62);
+  --line: rgba(21, 19, 26, .12);
+  --font-editorial: var(--font-serif-loaded), 'Cormorant Garamond', Georgia, serif;
+  --font-serif: var(--font-serif-loaded), 'Cormorant Garamond', Georgia, serif;
+  --font-ui: var(--font-sans-loaded), 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
 }
 
 body {
@@ -1134,7 +1144,7 @@ body {
   width: 100% !important;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: #e9e3dc;
+  background: transparent;
 }
 
 .hero-image.hero-image-landscape {
@@ -1148,8 +1158,8 @@ body {
   aspect-ratio: 3 / 4 !important;
   max-width: 440px;
   margin: 0 auto;
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
-  border-radius: 2px;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .hero-image.hero-image-square {
@@ -4996,22 +5006,19 @@ body {
 .moment-gallery-editorial .moment-image-frame {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5 !important;
-  background: #141211 !important;
+  background: transparent !important;
   border: none !important;
   outline: none !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: none !important;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 0 !important;
 }
 
 .moment-gallery-editorial .moment-image-frame img {
-  position: absolute !important;
-  inset: 0 !important;
+  position: relative !important;
   width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center !important;
+  height: auto !important;
+  object-fit: contain !important;
   background: transparent !important;
   display: block;
 }
@@ -5091,7 +5098,7 @@ body {
   letter-spacing: .08em;
 }
 
-/* Banda oscura de Glamora Social en Portada: grilla editorial simétrica */
+/* Banda oscura de Glamora Social en Portada: grilla editorial simétrica sin recuadros ni recortes */
 @media (min-width: 901px) {
   .social-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -5103,11 +5110,10 @@ body {
     margin-top: 0;
   }
 }
-.social-grid .social-image,
-.social-grid .social-image.social-image-landscape,
-.social-grid .social-image.social-image-portrait,
-.social-grid .social-image.social-image-square {
-  aspect-ratio: 4 / 5;
+.social-grid .social-image {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 900px) {
@@ -8183,6 +8189,80 @@ body {
     padding: 24px;
     gap: 32px;
   }
+}
+
+/* ==========================================================================
+   SISTEMA UNIFICADO DE TIPOGRAFÍA, 4 COLORES Y FOTOGRAFÍA SIN RECUADROS
+   Colores: Negro (#15131a), Oro Rosa (#d9b9a4), Blanco Marfil (#f7f5f0), Borgoña (#711c32)
+   ========================================================================== */
+body {
+  font-family: var(--font-ui);
+  background: var(--ivory);
+  color: var(--ink);
+}
+
+.section-heading h2,
+.article-card h3,
+.page-intro h1,
+.article-body h1,
+.article-body .lead,
+.article-text,
+.editorial-note p,
+.ad-slot strong,
+.sponsor-brand,
+.social-feature-copy h2,
+.hero-copy h1,
+.hero-copy > p,
+.editorial-h2 {
+  font-family: var(--font-editorial) !important;
+}
+
+.article-card h3 {
+  font-size: clamp(20px, 2.1vw, 26px);
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.article-card p {
+  font-family: var(--font-ui);
+  color: rgba(21, 19, 26, .72);
+}
+
+.section-heading h2 {
+  font-size: clamp(28px, 3vw, 38px);
+  color: var(--ink);
+}
+
+.light-heading h2 {
+  color: var(--ivory);
+}
+
+.light-heading .section-overline {
+  color: var(--champagne);
+}
+
+.article-body h1 {
+  font-size: clamp(36px, 5vw, 62px);
+  line-height: 1.06;
+  color: var(--ink);
+}
+
+.article-text {
+  font-size: 19px;
+  line-height: 1.85;
+  color: var(--ink);
+}
+
+/* Sin recuadros ni rellenos en fotografías */
+.card-image,
+.social-feature-image,
+.hero-image,
+.social-image,
+.moment-image-frame {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 

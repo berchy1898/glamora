@@ -92,12 +92,10 @@ export function EditorialGallery({
                 aria-label={`Ampliar ${item.alt}`}
               >
                 <div className="moment-image-frame">
-                  <Image
+                  <img
                     src={item.src}
                     alt={item.alt}
-                    fill
-                    unoptimized={item.src.startsWith('http')}
-                    sizes="(max-width: 700px) 100vw, 50vw"
+                    loading="lazy"
                   />
                   <span className="moment-folio-badge" aria-hidden="true">
                     {indexFormatted}
