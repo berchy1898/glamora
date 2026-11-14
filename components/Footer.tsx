@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { GlamoraLogo } from '@/components/GlamoraLogo';
@@ -86,13 +85,7 @@ export function Footer() {
       <div className="footer-main">
         <div className="footer-brand-block">
           <Link href="/" aria-label="Glamora, inicio" className="footer-logo-link">
-            <Image
-              src="/brand/glamora-mark.png"
-              alt="GLAMORA — Estilo · Cultura · Sociedad"
-              width={842}
-              height={449}
-              className="footer-logo"
-            />
+            <GlamoraLogo variant="footer" tone="dark-bg" />
           </Link>
           <span>REVISTA DIGITAL & EDICIÓN IMPRESA · BOLIVIA</span>
           <div style={{ marginTop: '14px', fontSize: '11px', color: '#a0948d', lineHeight: '1.9' }}>

@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -156,14 +155,7 @@ export function Header() {
         </button>
 
         <Link href="/" aria-label="Glamora, inicio" className="glamora-brand">
-          <Image
-            src="/brand/glamora-mark.png"
-            alt="GLAMORA — Estilo · Cultura · Sociedad"
-            width={842}
-            height={449}
-            className="glamora-logo"
-            priority
-          />
+          <GlamoraLogo variant="header" tone="dark-bg" />
         </Link>
 
         <button
