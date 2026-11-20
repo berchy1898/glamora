@@ -1134,48 +1134,46 @@ body {
 
 .hero-grid.hero-portrait,
 .hero-grid.hero-vertical,
-.hero-grid:has(.hero-image-portrait) {
+.hero-grid:has(.hero-image-portrait),
+.hero-grid:has(.hero-image-square) {
   grid-template-columns: minmax(300px, 0.95fr) minmax(320px, 1.15fr);
 }
 
 .hero-image {
   position: relative;
   display: block;
-  width: 100% !important;
-  aspect-ratio: 16 / 9;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
   overflow: hidden;
   background: transparent;
 }
 
 .hero-image.hero-image-landscape {
-  width: 100% !important;
-  aspect-ratio: 16 / 9;
+  width: 100%;
 }
 
 .hero-image.hero-image-portrait,
 .hero-image.hero-vertical {
-  width: 100% !important;
-  aspect-ratio: 3 / 4 !important;
-  max-width: 440px;
+  max-width: min(100%, 460px);
   margin: 0 auto;
   box-shadow: none;
   border-radius: 0;
 }
 
 .hero-image.hero-image-square {
-  aspect-ratio: 1 / 1;
-  max-width: 500px;
+  max-width: min(100%, 520px);
   margin: 0 auto;
 }
 
 .hero-image img,
 .hero-adaptive-img {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: relative;
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: 76vh;
+  object-fit: contain;
   transition: transform .8s cubic-bezier(.2, .7, .2, 1);
 }
 
@@ -1546,7 +1544,8 @@ body {
   .hero-grid,
   .hero-grid.hero-portrait,
   .hero-grid.hero-vertical,
-  .hero-grid:has(.hero-image-portrait) { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; }
+  .hero-grid:has(.hero-image-portrait),
+  .hero-grid:has(.hero-image-square) { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; }
   .editorial-story-grid { gap: 24px 18px; }
 }
 
@@ -1564,10 +1563,11 @@ body {
   .hero-grid,
   .hero-grid.hero-portrait,
   .hero-grid.hero-vertical,
-  .hero-grid:has(.hero-image-portrait) { grid-template-columns: minmax(0, 1fr); gap: 22px; }
-  .hero-image { width: 100% !important; }
+  .hero-grid:has(.hero-image-portrait),
+  .hero-grid:has(.hero-image-square) { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .hero-image { width: 100%; }
   .hero-image.hero-image-portrait,
-  .hero-image.hero-vertical { aspect-ratio: 3 / 4 !important; width: 100% !important; max-width: 360px !important; margin: 0 auto; }
+  .hero-image.hero-vertical { width: 100%; max-width: 360px; margin: 0 auto; }
   .hero-copy { max-width: 100%; padding: 0; min-width: 0; }
   .hero-copy h1 { max-width: 100%; font-size: clamp(32px, 8.5vw, 48px); line-height: 1.06; overflow-wrap: break-word; }
   .hero-note { margin-top: 22px; }

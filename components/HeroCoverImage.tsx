@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 
 export function HeroCoverImage({
@@ -18,15 +18,9 @@ export function HeroCoverImage({
 }) {
   const [aspect, setAspect] = useState<'landscape' | 'portrait' | 'square'>(initialAspect);
   const [isLoaded, setIsLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
-  useEffect(() => {
-    if (initialAspect) {
-      setAspect(initialAspect);
-    }
-  }, [initialAspect]);
-
-  function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    const img = e.currentTarget;
+  const detectAspect = useCallback((img: HTMLImageElement) => {
     if (img.naturalWidth && img.naturalHeight) {
       const ratio = img.naturalWidth / img.naturalHeight;
       if (ratio >= 1.18) {
@@ -38,6 +32,22 @@ export function HeroCoverImage({
       }
     }
     setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (initialAspect) {
+      setAspect(initialAspect);
+    }
+  }, [initialAspect]);
+
+  useEffect(() => {
+    if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
+      detectAspect(imgRef.current);
+    }
+  }, [src, detectAspect]);
+
+  function handleImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    detectAspect(e.currentTarget);
   }
 
   return (
@@ -50,17 +60,12 @@ export function HeroCoverImage({
       }}
     >
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         loading="eager"
         onLoad={handleImageLoad}
         className="hero-adaptive-img"
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          display: 'block',
-        }}
       />
       <span className="image-credit">
         {city || 'GLAMORA EDITORIAL'}
