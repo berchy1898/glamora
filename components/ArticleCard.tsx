@@ -30,16 +30,10 @@ export function ArticleCard({
           title={`Explorar ${article.title} en la revista`}
         >
           {article.cover_image ? (
-            <Image
+            <img
               src={article.cover_image}
               alt={article.title}
-              fill
-              unoptimized={article.cover_image.startsWith('http')}
-              sizes={
-                large
-                  ? '(max-width: 700px) 100vw, 60vw'
-                  : '(max-width: 700px) 50vw, 33vw'
-              }
+              loading="lazy"
             />
           ) : (
             <div className="image-placeholder">GLAMORA</div>
@@ -108,16 +102,10 @@ export function ArticleCard({
     >
       <div className="card-image">
         {article.cover_image ? (
-          <Image
+          <img
             src={article.cover_image}
             alt={article.title}
-            fill
-            unoptimized={article.cover_image.startsWith('http')}
-            sizes={
-              large
-                ? '(max-width: 700px) 100vw, 60vw'
-                : '(max-width: 700px) 50vw, 33vw'
-            }
+            loading="lazy"
           />
         ) : (
           <div className="image-placeholder">GLAMORA</div>
