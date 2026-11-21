@@ -24,6 +24,7 @@ const links = [
   ['VIAJES', '/categoria/viajes'],
   ['CULTURA', '/categoria/cultura'],
   ['GASTRONOMÍA', '/categoria/gastronomia'],
+  ['NOSOTROS', '/sobre-nosotros'],
 ];
 
 type SearchResultItem = {

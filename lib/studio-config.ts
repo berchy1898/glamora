@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { SocialPlatform } from '@/components/SocialIcons';
 import type { ArticleEditorialMeta, ContributorProfile } from '@/lib/contributors';
+import { supabaseServer } from '@/lib/supabase';
 import {
   DEFAULT_ISSUE_DESIGN,
   type CoverMastheadPalette,
@@ -61,7 +62,6 @@ export const DEFAULT_SOCIAL_LINKS: StudioSocialLinks = {
   instagram: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM || 'https://www.instagram.com/',
   facebook: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK || 'https://www.facebook.com/',
   tiktok: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK || 'https://www.tiktok.com/',
-  x: process.env.NEXT_PUBLIC_SOCIAL_X || 'https://x.com/',
   whatsapp: process.env.NEXT_PUBLIC_SOCIAL_WHATSAPP || 'https://wa.me/',
   linkedin: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN || 'https://www.linkedin.com/',
 };
@@ -164,11 +164,19 @@ export async function readStudioConfig(): Promise<StudioConfigData> {
     // ignore
   }
 
+  const mergedSocials = {
+    ...DEFAULT_SOCIAL_LINKS,
+    ...(fileData.socials || {}),
+    ...(cloudSocials || {}),
+  };
+
   return {
     socials: {
-      ...DEFAULT_SOCIAL_LINKS,
-      ...(fileData.socials || {}),
-      ...(cloudSocials || {}),
+      instagram: mergedSocials.instagram || DEFAULT_SOCIAL_LINKS.instagram,
+      facebook: mergedSocials.facebook || DEFAULT_SOCIAL_LINKS.facebook,
+      tiktok: mergedSocials.tiktok || DEFAULT_SOCIAL_LINKS.tiktok,
+      whatsapp: mergedSocials.whatsapp || DEFAULT_SOCIAL_LINKS.whatsapp,
+      linkedin: mergedSocials.linkedin || DEFAULT_SOCIAL_LINKS.linkedin,
     },
     subscribers: cloudSubs !== null ? cloudSubs : (Array.isArray(fileData.subscribers) ? fileData.subscribers : []),
     issueDesigns: cloudIssueDesigns !== null ? cloudIssueDesigns : (fileData.issueDesigns || {}),
@@ -179,18 +187,55 @@ export async function readStudioConfig(): Promise<StudioConfigData> {
   };
 }
 
-export async function writeStudioConfig(data: StudioConfigData): Promise<void> {
-  // 1. Escribir a Supabase en paralelo
+export type StudioSettingKey =
+  | 'social_links'
+  | 'issue_designs'
+  | 'article_views'
+  | 'contributors'
+  | 'article_meta';
+
+async function upsertStudioSettingRow(key: StudioSettingKey, value: unknown): Promise<boolean> {
+  const updated_at = new Date().toISOString();
   try {
-    await postSupabaseRest('studio_settings', [
-      { key: 'social_links', value: data.socials, updated_at: new Date().toISOString() },
-      { key: 'issue_designs', value: data.issueDesigns, updated_at: new Date().toISOString() },
-      { key: 'article_views', value: data.articleViews, updated_at: new Date().toISOString() },
-      { key: 'contributors', value: data.contributors || {}, updated_at: new Date().toISOString() },
-      { key: 'article_meta', value: data.articleMeta || {}, updated_at: new Date().toISOString() },
-    ], true);
+    const db = await supabaseServer();
+    if (db) {
+      const { error } = await db
+        .from('studio_settings')
+        .upsert({ key, value, updated_at }, { onConflict: 'key' });
+      if (!error) return true;
+    }
   } catch {
-    // ignore
+    // Fallback to REST helper below
+  }
+  return postSupabaseRest('studio_settings', [{ key, value, updated_at }], true);
+}
+
+export async function writeStudioConfig(
+  data: StudioConfigData,
+  keysToSync: StudioSettingKey[] = [
+    'social_links',
+    'issue_designs',
+    'article_views',
+    'contributors',
+    'article_meta',
+  ]
+): Promise<boolean> {
+  let cloudOk = false;
+  const payloadByKey: Record<StudioSettingKey, unknown> = {
+    social_links: data.socials,
+    issue_designs: data.issueDesigns,
+    article_views: data.articleViews,
+    contributors: data.contributors || {},
+    article_meta: data.articleMeta || {},
+  };
+
+  try {
+    const results = await Promise.all(
+      keysToSync.map((key) => upsertStudioSettingRow(key, payloadByKey[key]))
+    );
+    cloudOk = results.some(Boolean);
+  } catch {
+    cloudOk = false;
   }
 
   // 2. Escribir copia de seguridad local (si el entorno lo permite)
@@ -201,4 +246,6 @@ export async function writeStudioConfig(data: StudioConfigData): Promise<void> {
   } catch {
     // Ignorar en entornos de solo lectura (serverless / cloudflare edge)
   }
+
+  return cloudOk;
 }

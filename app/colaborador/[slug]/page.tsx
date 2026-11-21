@@ -6,6 +6,8 @@ import { readStudioConfig } from '@/lib/studio-config';
 import { slugifyContributorName } from '@/lib/contributors';
 import { ArticleCard } from '@/components/ArticleCard';
 
+export const dynamic = 'force-dynamic';
+
 function resolveDisplayName(
   slug: string,
   profileName: string | undefined,

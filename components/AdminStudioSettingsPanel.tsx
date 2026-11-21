@@ -26,7 +26,6 @@ const INITIAL_SOCIALS: SocialLinksState = {
   instagram: 'https://www.instagram.com/',
   facebook: 'https://www.facebook.com/',
   tiktok: 'https://www.tiktok.com/',
-  x: 'https://x.com/',
   whatsapp: 'https://wa.me/',
   linkedin: 'https://www.linkedin.com/',
 };
@@ -50,11 +49,6 @@ const SOCIAL_FIELDS: {
     id: 'tiktok',
     label: 'TIKTOK OFICIAL',
     placeholder: 'https://www.tiktok.com/@glamorabolivia',
-  },
-  {
-    id: 'x',
-    label: 'X (TWITTER) OFICIAL',
-    placeholder: 'https://x.com/glamorabolivia',
   },
   {
     id: 'whatsapp',
@@ -109,7 +103,25 @@ export function AdminStudioSettingsPanel({
           .maybeSingle();
 
         if (active && socialRow?.value && typeof socialRow.value === 'object') {
-          setSocials((prev) => ({ ...prev, ...socialRow.value }));
+          const v = socialRow.value as Record<string, string>;
+          setSocials((prev) => ({
+            instagram: v.instagram || prev.instagram,
+            facebook: v.facebook || prev.facebook,
+            tiktok: v.tiktok || prev.tiktok,
+            whatsapp: v.whatsapp || prev.whatsapp,
+            linkedin: v.linkedin || prev.linkedin,
+          }));
+        }
+
+        // Cargar colaboradores guardados directamente en Supabase
+        const { data: contribRow } = await db
+          .from('studio_settings')
+          .select('value')
+          .eq('key', 'contributors')
+          .maybeSingle();
+
+        if (active && contribRow?.value && typeof contribRow.value === 'object') {
+          setContributors(contribRow.value as Record<string, ContributorProfile>);
         }
 
         // 2. Cargar vistas y diseños desde api
@@ -191,19 +203,48 @@ export function AdminStudioSettingsPanel({
     setSavingContrib(true);
     setContribMsg('');
     try {
-      const res = await fetch('/api/studio-config', {
+      const db = supabaseBrowser();
+      const cleanedProfile: ContributorProfile = {
+        slug,
+        name,
+        role: (contribForm.role || 'Colaborador Editorial').trim(),
+        bio: (contribForm.bio || '').trim(),
+        instagram: contribForm.instagram?.trim() || undefined,
+        linkedin: contribForm.linkedin?.trim() || undefined,
+        website: contribForm.website?.trim() || undefined,
+      };
+
+      const { data: existingRow } = await db
+        .from('studio_settings')
+        .select('value')
+        .eq('key', 'contributors')
+        .maybeSingle();
+
+      const currentMap: Record<string, ContributorProfile> =
+        existingRow?.value && typeof existingRow.value === 'object'
+          ? { ...(existingRow.value as Record<string, ContributorProfile>) }
+          : { ...contributors };
+      currentMap[slug] = cleanedProfile;
+
+      const { error: supaErr } = await db.from('studio_settings').upsert({
+        key: 'contributors',
+        value: currentMap,
+        updated_at: new Date().toISOString(),
+      });
+
+      await fetch('/api/studio-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'save_contributor',
-          profile: { ...contribForm, slug, name },
+          profile: cleanedProfile,
         }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setContribMsg(data.error || 'No se pudo guardar el colaborador.');
+      }).catch(() => undefined);
+
+      if (supaErr) {
+        setContribMsg(`Error al guardar en la nube: ${supaErr.message}`);
       } else {
-        setContributors((prev) => ({ ...prev, [slug]: data.contributor }));
+        setContributors(currentMap);
         setContribForm({
           slug: '',
           name: '',
@@ -224,17 +265,35 @@ export function AdminStudioSettingsPanel({
 
   async function handleDeleteContributor(slug: string) {
     try {
-      const res = await fetch('/api/studio-config', {
+      const db = supabaseBrowser();
+      const { data: existingRow } = await db
+        .from('studio_settings')
+        .select('value')
+        .eq('key', 'contributors')
+        .maybeSingle();
+
+      const nextMap: Record<string, ContributorProfile> =
+        existingRow?.value && typeof existingRow.value === 'object'
+          ? { ...(existingRow.value as Record<string, ContributorProfile>) }
+          : { ...contributors };
+      delete nextMap[slug];
+
+      const { error: supaErr } = await db.from('studio_settings').upsert({
+        key: 'contributors',
+        value: nextMap,
+        updated_at: new Date().toISOString(),
+      });
+
+      await fetch('/api/studio-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'delete_contributor', slug }),
-      });
-      if (res.ok) {
-        setContributors((prev) => {
-          const next = { ...prev };
-          delete next[slug];
-          return next;
-        });
+      }).catch(() => undefined);
+
+      if (supaErr) {
+        setContribMsg(`No se pudo eliminar en la nube: ${supaErr.message}`);
+      } else {
+        setContributors(nextMap);
       }
     } catch {
       // ignore

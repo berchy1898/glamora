@@ -12,6 +12,8 @@ import { EditorialGallery } from '@/components/EditorialGallery';
 import { ArticleCard } from '@/components/ArticleCard';
 import { ReadingTracker, ArticleShareBarWidget } from '@/components/ArticleClientWidgets';
 
+export const dynamic = 'force-dynamic';
+
 function estimateReadingMinutes(text: string): number {
   const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.ceil(words / 190));

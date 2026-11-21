@@ -242,20 +242,37 @@ export default function Admin() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (a.slug) {
-      fetch('/api/studio-config')
-        .then((res) => (res.ok ? res.json() : null))
-        .then((cfg) => {
-          const meta = cfg?.articleMeta?.[a.slug] as ArticleEditorialMeta | undefined;
+      (async () => {
+        try {
+          let meta: ArticleEditorialMeta | undefined;
+          const { data: metaRow } = await db
+            .from('studio_settings')
+            .select('value')
+            .eq('key', 'article_meta')
+            .maybeSingle();
+
+          if (metaRow?.value && typeof metaRow.value === 'object') {
+            meta = (metaRow.value as Record<string, ArticleEditorialMeta>)[a.slug];
+          }
+          if (!meta) {
+            const res = await fetch('/api/studio-config');
+            if (res.ok) {
+              const cfg = await res.json();
+              meta = cfg?.articleMeta?.[a.slug] as ArticleEditorialMeta | undefined;
+            }
+          }
           if (!meta) return;
           setForm((prev) => ({
             ...prev,
-            photographer: meta.photographer || '',
-            coverage_by: meta.coverageBy || '',
-            expert_heading: meta.expertHeading || 'Conoce a nuestra experta',
-            expert_bio: meta.expertBio || '',
+            photographer: meta?.photographer || '',
+            coverage_by: meta?.coverageBy || '',
+            expert_heading: meta?.expertHeading || 'Conoce a nuestra experta',
+            expert_bio: meta?.expertBio || '',
           }));
-        })
-        .catch(() => undefined);
+        } catch {
+          // Non-fatal metadata load
+        }
+      })();
     }
   }
 
@@ -659,27 +676,80 @@ export default function Admin() {
           fields.slug,
           previousArticle?.slug
         );
+        const cleanPhotographer = photographer.trim() || undefined;
+        const cleanCoverageBy = coverage_by.trim() || undefined;
+        const cleanExpertBio = expert_bio.trim() || undefined;
+        const cleanExpertHeading = cleanExpertBio
+          ? (expert_heading.trim() || 'Conoce a nuestra experta')
+          : undefined;
+        const cleanedMeta: ArticleEditorialMeta = {
+          photographer: cleanPhotographer,
+          coverageBy: cleanCoverageBy,
+          expertHeading: cleanExpertHeading,
+          expertBio: cleanExpertBio,
+        };
+
+        let metaSyncError: string | null = null;
         try {
+          const { data: metaRow, error: readMetaErr } = await db
+            .from('studio_settings')
+            .select('value')
+            .eq('key', 'article_meta')
+            .maybeSingle();
+
+          if (readMetaErr) {
+            metaSyncError = readMetaErr.message;
+          } else {
+            const nextMetaMap: Record<string, ArticleEditorialMeta> =
+              metaRow?.value && typeof metaRow.value === 'object'
+                ? { ...(metaRow.value as Record<string, ArticleEditorialMeta>) }
+                : {};
+
+            if (previousArticle?.slug && previousArticle.slug !== fields.slug) {
+              delete nextMetaMap[previousArticle.slug];
+            }
+
+            if (cleanPhotographer || cleanCoverageBy || cleanExpertBio) {
+              nextMetaMap[fields.slug] = cleanedMeta;
+            } else {
+              delete nextMetaMap[fields.slug];
+            }
+
+            const { error: writeMetaErr } = await db.from('studio_settings').upsert({
+              key: 'article_meta',
+              value: nextMetaMap,
+              updated_at: new Date().toISOString(),
+            });
+            if (writeMetaErr) {
+              metaSyncError = writeMetaErr.message;
+            }
+          }
+
           await fetch('/api/studio-config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'save_article_meta',
               slug: fields.slug,
-              meta: {
-                photographer,
-                coverageBy: coverage_by,
-                expertHeading: expert_heading,
-                expertBio: expert_bio,
-              },
+              meta: cleanedMeta,
             }),
-          });
-        } catch {
-          // Non-fatal metadata sync
+          }).catch(() => undefined);
+        } catch (err: any) {
+          metaSyncError = err?.message || 'Error guardando créditos/experto.';
         }
-        setMessage(
+
+        const warnings = [
           coverageSyncError
-            ? `Artículo guardado, pero no se pudo sincronizar la cobertura: ${coverageSyncError.message}`
+            ? `no se pudo sincronizar la cobertura (${coverageSyncError.message})`
+            : null,
+          metaSyncError
+            ? `no se pudieron guardar créditos/experto en la nube (${metaSyncError})`
+            : null,
+        ].filter(Boolean);
+
+        setMessage(
+          warnings.length > 0
+            ? `Artículo guardado, pero ${warnings.join(' y ')}.`
             : editingId
               ? 'Artículo actualizado correctamente.'
               : 'Artículo guardado correctamente.'
@@ -2556,6 +2626,12 @@ export default function Admin() {
                   {form.excerpt && <p className="lead">{form.excerpt}</p>}
                   <div className="article-byline">
                     <span>POR {form.author || 'GLAMORA EDITORIAL'}</span>
+                    {form.photographer.trim() && (
+                      <span>FOTOGRAFÍA POR {form.photographer.trim().toUpperCase()}</span>
+                    )}
+                    {form.coverage_by.trim() && (
+                      <span>COBERTURA POR {form.coverage_by.trim().toUpperCase()}</span>
+                    )}
                     {previewDate && <span>{previewDate}</span>}
                     <span>GLAMORA · BOLIVIA</span>
                   </div>
@@ -2650,6 +2726,22 @@ export default function Admin() {
                         <p>{form.people_names.split(',').map((name) => name.trim()).filter(Boolean).join(' · ')}</p>
                       </div>
                     )}
+                  </section>
+                )}
+
+                {form.expert_bio.trim() && (
+                  <section
+                    className="article-expert-section"
+                    aria-label={form.expert_heading.trim() || 'Conoce a nuestra experta'}
+                  >
+                    <h2>{form.expert_heading.trim() || 'Conoce a nuestra experta'}</h2>
+                    {form.expert_bio
+                      .split(/\n{2,}/)
+                      .map((p) => p.trim())
+                      .filter(Boolean)
+                      .map((paragraph, idx) => (
+                        <p key={idx}>{paragraph}</p>
+                      ))}
                   </section>
                 )}
 

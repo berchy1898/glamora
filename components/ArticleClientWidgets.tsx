@@ -86,11 +86,10 @@ export function ArticleShareBarWidget({
     );
   }
 
-  function handleXShare() {
+  function handleLinkedInShare() {
     const url = getArticleUrl();
-    const text = `${title} — GLAMORA`;
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
       '_blank',
       'noopener,noreferrer'
     );
@@ -174,11 +173,11 @@ export function ArticleShareBarWidget({
           <button
             type="button"
             className="article-share-icon-link"
-            onClick={handleXShare}
-            aria-label="Compartir en X"
-            title="Compartir en X"
+            onClick={handleLinkedInShare}
+            aria-label="Compartir en LinkedIn"
+            title="Compartir en LinkedIn"
           >
-            <SocialIcon platform="x" size={15} />
+            <SocialIcon platform="linkedin" size={16} />
           </button>
 
           <span className="article-share-divider" aria-hidden="true" />

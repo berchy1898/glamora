@@ -6,7 +6,6 @@ export type SocialPlatform =
   | 'instagram'
   | 'facebook'
   | 'tiktok'
-  | 'x'
   | 'whatsapp'
   | 'linkedin';
 
@@ -35,12 +34,6 @@ export const GLAMORA_SOCIAL_CHANNELS: GlamoraSocialChannel[] = [
     shortLabel: 'TIKTOK',
     name: 'TikTok',
     href: process.env.NEXT_PUBLIC_SOCIAL_TIKTOK || 'https://www.tiktok.com/',
-  },
-  {
-    id: 'x',
-    shortLabel: 'X',
-    name: 'X',
-    href: process.env.NEXT_PUBLIC_SOCIAL_X || 'https://x.com/',
   },
   {
     id: 'whatsapp',
@@ -119,12 +112,6 @@ export function SocialIcon({
       return (
         <svg {...common}>
           <path d="M9 12a4 4 0 1 0 4 4V4c.7 2.5 2.6 4.2 5 4.5" />
-        </svg>
-      );
-    case 'x':
-      return (
-        <svg {...common}>
-          <path d="M4 4l16 16M20 4L4 20" />
         </svg>
       );
     case 'whatsapp':

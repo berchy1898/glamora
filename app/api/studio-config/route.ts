@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       const slugKey = body.slug.trim();
       if (slugKey) {
         current.articleViews[slugKey] = (current.articleViews[slugKey] || 0) + 1;
-        await writeStudioConfig(current);
+        await writeStudioConfig(current, ['article_views']);
       }
       return NextResponse.json({
         ok: true,
@@ -117,11 +117,10 @@ export async function POST(request: Request) {
         instagram: incoming.instagram?.trim() || DEFAULT_SOCIAL_LINKS.instagram,
         facebook: incoming.facebook?.trim() || DEFAULT_SOCIAL_LINKS.facebook,
         tiktok: incoming.tiktok?.trim() || DEFAULT_SOCIAL_LINKS.tiktok,
-        x: incoming.x?.trim() || DEFAULT_SOCIAL_LINKS.x,
         whatsapp: incoming.whatsapp?.trim() || DEFAULT_SOCIAL_LINKS.whatsapp,
         linkedin: incoming.linkedin?.trim() || DEFAULT_SOCIAL_LINKS.linkedin,
       };
-      await writeStudioConfig(current);
+      await writeStudioConfig(current, ['social_links']);
       return NextResponse.json({ ok: true, socials: current.socials });
     }
 
@@ -140,7 +139,7 @@ export async function POST(request: Request) {
             ? incoming.articleLayouts
             : {},
       };
-      await writeStudioConfig(current);
+      await writeStudioConfig(current, ['issue_designs']);
       return NextResponse.json({
         ok: true,
         design: current.issueDesigns[body.issueKey],
@@ -149,7 +148,7 @@ export async function POST(request: Request) {
 
     if (body.action === 'reset_test_metrics') {
       current.articleViews = {};
-      await writeStudioConfig(current);
+      await writeStudioConfig(current, ['article_views']);
       return NextResponse.json({ ok: true, message: 'Métricas y visitas de prueba restablecidas a cero.' });
     }
 
@@ -182,7 +181,7 @@ export async function POST(request: Request) {
       } else {
         current.articleMeta[slugKey] = cleaned;
       }
-      await writeStudioConfig(current);
+      await writeStudioConfig(current, ['article_meta']);
       return NextResponse.json({ ok: true, articleMeta: current.articleMeta[slugKey] || null });
     }
 
@@ -202,14 +201,14 @@ export async function POST(request: Request) {
         linkedin: incoming.linkedin?.trim() || undefined,
         website: incoming.website?.trim() || undefined,
       };
-      await writeStudioConfig(current);
+      await writeStudioConfig(current, ['contributors']);
       return NextResponse.json({ ok: true, contributor: current.contributors[slug] });
     }
 
     if (body.action === 'delete_contributor' && typeof body.slug === 'string') {
       const slugKey = body.slug.trim();
       delete current.contributors[slugKey];
-      await writeStudioConfig(current);
+      await writeStudioConfig(current, ['contributors']);
       return NextResponse.json({ ok: true });
     }
 

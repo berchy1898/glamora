@@ -117,6 +117,7 @@ export function Footer() {
 
         <div className="footer-column">
           <span>COLABORAR</span>
+          <Link href="/sobre-nosotros">Sobre nosotros</Link>
           <Link href="/publicidad">Publicidad y alianzas</Link>
           <Link href="/contacto">Contacto editorial</Link>
           <Link href="/contacto">Enviar una historia</Link>
