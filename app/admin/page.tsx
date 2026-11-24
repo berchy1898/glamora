@@ -111,6 +111,7 @@ export default function Admin() {
     'publications' | 'calendar' | 'contributors' | 'socials' | 'inbox' | 'system'
   >('publications');
   const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const expertTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inlineImageInputRef = useRef<HTMLInputElement | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -369,10 +370,12 @@ export default function Admin() {
   }
 
   function insertEditorialFormat(
-    kind: 'subhead' | 'quote' | 'bold' | 'italic' | 'link' | 'divider'
+    kind: 'subhead' | 'quote' | 'bold' | 'italic' | 'link' | 'divider',
+    field: 'body' | 'expert_bio' = 'body'
   ) {
-    const textarea = bodyTextareaRef.current;
-    const current = form.body;
+    const textarea =
+      field === 'expert_bio' ? expertTextareaRef.current : bodyTextareaRef.current;
+    const current = field === 'expert_bio' ? form.expert_bio : form.body;
     const start = textarea ? textarea.selectionStart : current.length;
     const end = textarea ? textarea.selectionEnd : current.length;
     const selected = current.slice(start, end);
@@ -392,9 +395,9 @@ export default function Admin() {
       replacement = `\n\n---\n\n`;
     }
 
-    const nextBody =
+    const nextValue =
       current.slice(0, start) + replacement + current.slice(end);
-    update('body', nextBody);
+    update(field, nextValue);
 
     setTimeout(() => {
       if (textarea) {
@@ -2224,15 +2227,71 @@ export default function Admin() {
                 </datalist>
               </label>
 
-              <label style={{ marginTop: 10, display: 'block' }}>
-                RESEÑA / EXPERIENCIA DEL EXPERTO O ENTREVISTADO (OPCIONAL)
+              <div style={{ marginTop: 14 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 9, letterSpacing: '.14em', color: '#675a56' }}>
+                    RESEÑA / EXPERIENCIA DEL EXPERTO O ENTREVISTADO (OPCIONAL)
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }} aria-label="Formato para perfil del experto">
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => insertEditorialFormat('bold', 'expert_bio')}
+                      style={{ border: '1px solid #d8cec4', padding: '5px 9px', background: '#faf7f2' }}
+                    >
+                      NEGRITA
+                    </button>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => insertEditorialFormat('italic', 'expert_bio')}
+                      style={{ border: '1px solid #d8cec4', padding: '5px 9px', background: '#faf7f2' }}
+                    >
+                      CURSIVA
+                    </button>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => insertEditorialFormat('link', 'expert_bio')}
+                      style={{ border: '1px solid #d8cec4', padding: '5px 9px', background: '#faf7f2' }}
+                    >
+                      + ENLACE
+                    </button>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => insertEditorialFormat('quote', 'expert_bio')}
+                      style={{ border: '1px solid #d8cec4', padding: '5px 9px', background: '#faf7f2' }}
+                    >
+                      + CITA
+                    </button>
+                    <button
+                      type="button"
+                      className="text-link"
+                      onClick={() => insertEditorialFormat('subhead', 'expert_bio')}
+                      style={{ border: '1px solid #d8cec4', padding: '5px 9px', background: '#faf7f2' }}
+                    >
+                      + SUBTÍTULO
+                    </button>
+                  </div>
+                </div>
                 <textarea
-                  rows={4}
+                  ref={expertTextareaRef}
+                  rows={5}
                   value={form.expert_bio}
                   onChange={(e) => update('expert_bio', e.target.value)}
-                  placeholder="Ej. Peluquera de formación, Daphné Narcy se orientó hacia el cuidado capilar... (si se deja vacío, este apartado no se muestra en el artículo)"
+                  placeholder="Ej. Peluquera de formación, **Daphné Narcy** se orientó hacia el cuidado capilar... Puedes usar **negrita**, *cursiva*, [enlaces](https://...) o viñetas (- item). Si queda vacío, este apartado no se muestra."
                 />
-              </label>
+              </div>
             </div>
 
             <label>
@@ -2734,14 +2793,13 @@ export default function Admin() {
                     className="article-expert-section"
                     aria-label={form.expert_heading.trim() || 'Conoce a nuestra experta'}
                   >
+                    <span className="article-expert-kicker">PERFIL EDITORIAL · GLAMORA</span>
                     <h2>{form.expert_heading.trim() || 'Conoce a nuestra experta'}</h2>
-                    {form.expert_bio
-                      .split(/\n{2,}/)
-                      .map((p) => p.trim())
-                      .filter(Boolean)
-                      .map((paragraph, idx) => (
-                        <p key={idx}>{paragraph}</p>
-                      ))}
+                    <EditorialBodyRenderer
+                      body={form.expert_bio}
+                      articleTitle={form.title || 'Vista previa GLAMORA'}
+                      variant="compact"
+                    />
                   </section>
                 )}
 

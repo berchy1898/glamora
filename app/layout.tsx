@@ -12,7 +12,7 @@ const fontBodoni = Bodoni_Moda({
 
 const fontEditorial = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-serif-loaded',
   display: 'swap',

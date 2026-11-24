@@ -8305,32 +8305,93 @@ body {
 }
 
 .article-expert-section {
-  max-width: 720px;
-  margin: 44px auto 12px;
+  max-width: 690px;
+  margin: 52px auto 18px;
   padding: 28px 0 32px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border-top: 1px solid rgba(21, 19, 26, .18);
+  border-bottom: 1px solid var(--ink);
+}
+
+.article-expert-kicker {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--font-ui);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--wine);
 }
 
 .article-expert-section h2 {
-  margin: 0 0 16px;
+  margin: 0 0 18px;
   font-family: var(--font-editorial) !important;
-  font-size: clamp(26px, 3vw, 34px);
-  font-weight: 400;
-  line-height: 1.15;
+  font-size: clamp(28px, 3.2vw, 36px);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  line-height: 1.12;
   color: var(--ink);
 }
 
-.article-expert-section p {
-  margin: 0 0 14px;
+.editorial-article-text-compact {
+  max-width: 100%;
+  margin: 0 !important;
   font-family: var(--font-editorial) !important;
   font-size: 19px;
-  line-height: 1.82;
+  line-height: 1.78;
   color: var(--ink);
 }
 
-.article-expert-section p:last-child {
+.editorial-article-text-compact p {
+  margin: 0 0 16px;
+}
+
+.editorial-article-text-compact p:last-child {
   margin-bottom: 0;
+}
+
+.editorial-article-text-compact p:first-child:not(.article-subhead)::first-letter {
+  float: none !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+}
+
+.editorial-article-text strong,
+.editorial-article-text-compact strong,
+.article-expert-section strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.editorial-article-text em,
+.editorial-article-text-compact em,
+.article-expert-section em {
+  font-style: italic;
+}
+
+.editorial-article-text-compact .editorial-inline-link,
+.article-expert-section .editorial-inline-link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: rgba(21, 19, 26, .55);
+  text-underline-offset: 4px;
+  transition: color .2s ease, text-decoration-color .2s ease;
+}
+
+.editorial-article-text-compact .editorial-inline-link:hover,
+.article-expert-section .editorial-inline-link:hover {
+  color: var(--wine);
+  text-decoration-color: var(--wine);
+}
+
+.editorial-bullet-list {
+  margin: 0 0 18px;
+  padding-left: 20px;
+}
+
+.editorial-bullet-list li {
+  margin-bottom: 8px;
 }
 
 .contributor-page {

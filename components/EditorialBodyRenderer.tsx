@@ -3,12 +3,17 @@ import { splitEditorialParagraphs } from '@/lib/editorial-utils';
 import { EditorialVideoPlayer } from '@/components/EditorialVideoPlayer';
 
 function renderInlineFormatting(text: string): React.ReactNode[] {
-  // Soporta **negrita**, *cursiva* y [texto](url)
-  const tokenRegex = /(\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
+  // Soporta **negrita**, __negrita__, *cursiva* y [texto](url)
+  const tokenRegex =
+    /(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
   const parts = text.split(tokenRegex);
 
   return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+    if (
+      ((part.startsWith('**') && part.endsWith('**')) ||
+        (part.startsWith('__') && part.endsWith('__'))) &&
+      part.length > 4
+    ) {
       return <strong key={index}>{part.slice(2, -2)}</strong>;
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
@@ -24,7 +29,7 @@ function renderInlineFormatting(text: string): React.ReactNode[] {
           rel="noopener noreferrer"
           className="editorial-inline-link"
         >
-          {linkMatch[1]} ↗
+          {linkMatch[1]}
         </a>
       );
     }
@@ -35,16 +40,22 @@ function renderInlineFormatting(text: string): React.ReactNode[] {
 type EditorialBodyRendererProps = {
   body: string;
   articleTitle?: string;
+  variant?: 'article' | 'compact';
 };
 
 export function EditorialBodyRenderer({
   body,
   articleTitle,
+  variant = 'article',
 }: EditorialBodyRendererProps) {
   const paragraphs = splitEditorialParagraphs(body || '');
+  const rootClass =
+    variant === 'compact'
+      ? 'editorial-article-text editorial-article-text-compact'
+      : 'editorial-article-text';
 
   return (
-    <div className="editorial-article-text">
+    <div className={rootClass}>
       {paragraphs.map((p, i) => {
         const trimmed = p.trim();
 
@@ -121,6 +132,18 @@ export function EditorialBodyRenderer({
             <p key={i} className="article-subhead">
               {subheadText}
             </p>
+          );
+        }
+
+        // Lista con viñetas (- elemento o • elemento)
+        const lines = trimmed.split('\n').map((l) => l.trim()).filter(Boolean);
+        if (lines.length > 0 && lines.every((l) => /^[-•]\s+/.test(l))) {
+          return (
+            <ul key={i} className="editorial-bullet-list">
+              {lines.map((line, liIdx) => (
+                <li key={liIdx}>{renderInlineFormatting(line.replace(/^[-•]\s+/, ''))}</li>
+              ))}
+            </ul>
           );
         }
 

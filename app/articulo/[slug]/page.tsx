@@ -285,14 +285,13 @@ export default async function ArticlePage({
             className="article-expert-section"
             aria-label={articleMeta.expertHeading || 'Conoce a nuestra experta'}
           >
+            <span className="article-expert-kicker">PERFIL EDITORIAL · GLAMORA</span>
             <h2>{articleMeta.expertHeading || 'Conoce a nuestra experta'}</h2>
-            {articleMeta.expertBio
-              .split(/\n{2,}/)
-              .map((p) => p.trim())
-              .filter(Boolean)
-              .map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
+            <EditorialBodyRenderer
+              body={articleMeta.expertBio}
+              articleTitle={a.title}
+              variant="compact"
+            />
           </section>
         )}
 
